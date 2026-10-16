@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from math import isfinite
 
 OBJECTIVES = ("T", "C", "X", "W", "E", "S")
 
@@ -11,7 +12,12 @@ def objective_vector(values: Mapping[str, float], objectives: Iterable[str] = OB
     unknown = set(names) - set(OBJECTIVES)
     if unknown:
         raise ValueError(f"unknown objectives: {sorted(unknown)}")
-    return tuple(float(values.get(name, 0.0)) for name in names)
+    if not names or len(set(names)) != len(names):
+        raise ValueError("objectives must be a non-empty sequence without duplicates")
+    vector = tuple(float(values.get(name, 0.0)) for name in names)
+    if not all(isfinite(value) for value in vector):
+        raise ValueError("objective values must be finite")
+    return vector
 
 
 def sum_leg_vectors(legs, objectives: Iterable[str] = OBJECTIVES) -> dict[str, float]:
@@ -29,17 +35,29 @@ def sum_leg_vectors(legs, objectives: Iterable[str] = OBJECTIVES) -> dict[str, f
 def normalize(values: Mapping[str, float], scales: Mapping[str, float], objectives=OBJECTIVES) -> dict[str, float]:
     output = {}
     for name in objectives:
+        if name not in scales:
+            raise ValueError(f"missing scale for objective {name}")
         scale = float(scales[name])
-        if scale <= 0:
+        if not isfinite(scale) or scale <= 0:
             raise ValueError(f"scale for {name} must be positive")
-        output[name] = float(values.get(name, 0.0)) / scale
+        value = float(values.get(name, 0.0))
+        if not isfinite(value):
+            raise ValueError(f"value for {name} must be finite")
+        output[name] = value / scale
     return output
 
 
 def weighted_score(values: Mapping[str, float], weights: Mapping[str, float],
                    scales: Mapping[str, float], objectives=OBJECTIVES) -> float:
-    return sum(float(weights.get(k, 0.0)) * float(values.get(k, 0.0)) / float(scales[k])
-               for k in objectives)
+    names = tuple(objectives)
+    normalized = normalize(values, scales, names)
+    total = 0.0
+    for key in names:
+        weight = float(weights.get(key, 0.0))
+        if not isfinite(weight) or weight < 0:
+            raise ValueError(f"weight for {key} must be finite and non-negative")
+        total += weight * normalized[key]
+    return total
 
 
 def profile_regret(candidates, reference, weights, scales, objectives=OBJECTIVES) -> float:

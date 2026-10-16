@@ -27,6 +27,7 @@ from scipy.spatial import cKDTree
 from shapely.geometry import Point, box
 from pyrosm import OSM
 import yaml
+from pumo.timetable import gtfs_time_seconds
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "Data"
@@ -45,13 +46,7 @@ def read_config():
 
 def gtfs_time(value: str) -> int:
     """GTFS time in seconds after midnight; hours may exceed 23."""
-    try:
-        h, m, s = (int(p) for p in str(value).split(":"))
-    except Exception as exc:
-        raise ValueError(f"invalid GTFS time {value!r}") from exc
-    if h < 0 or not 0 <= m < 60 or not 0 <= s < 60:
-        raise ValueError(f"invalid GTFS time {value!r}")
-    return h * 3600 + m * 60 + s
+    return gtfs_time_seconds(value)
 
 
 def pick_service_date(feed_dirs: list[Path], explicit: str | None) -> str:

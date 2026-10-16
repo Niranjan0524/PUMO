@@ -26,10 +26,18 @@ def dominates(a: Sequence[float], b: Sequence[float], *, eps: float = 0.0) -> bo
 
 def pareto_indices(vectors: Sequence[Sequence[float]], *, eps: float = 0.0) -> list[int]:
     """Indices of the first occurrence of each unique non-dominated vector."""
+    if eps < 0:
+        raise ValueError("eps must be non-negative")
+    normalized = [tuple(map(float, vector)) for vector in vectors]
+    if normalized:
+        dimension = len(normalized[0])
+        if dimension == 0 or any(len(vector) != dimension for vector in normalized):
+            raise ValueError("objective vectors must have equal, non-zero dimensions")
+        if not all(isfinite(value) for vector in normalized for value in vector):
+            raise ValueError("objective vectors must be finite")
     keep: list[int] = []
     seen: set[tuple[float, ...]] = set()
-    for i, vector in enumerate(vectors):
-        key = tuple(float(x) for x in vector)
+    for i, key in enumerate(normalized):
         if key in seen:
             continue
         seen.add(key)
