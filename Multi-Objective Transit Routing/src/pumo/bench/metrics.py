@@ -60,11 +60,23 @@ def hypervolume_mc(points, reference_point=None, *, samples=100_000, seed=202610
     if points.ndim!=2: raise ValueError("points must be a 2-D matrix")
     d=points.shape[1]
     ref=np.asarray(reference_point if reference_point is not None else np.full(d,1.1),dtype=float)
-    rng=np.random.default_rng(seed); sample=rng.random((int(samples),d))*ref
-    dominated=np.zeros(len(sample),dtype=bool)
-    for point in points:
-        dominated |= np.all(point<=sample,axis=1)
-    return float(np.prod(ref)*dominated.mean())
+    if ref.shape!=(d,): raise ValueError("reference point dimension mismatch")
+    points=points[np.all(np.isfinite(points),axis=1) & np.all(points<ref,axis=1)]
+    if not len(points): return 0.0
+    rng=np.random.default_rng(seed)
+    dominated_count=0
+    n_samples=int(samples)
+    # Chunk both axes: vectorized dominance is much faster than one Python
+    # scan per candidate, while the bounded temporary keeps memory predictable.
+    for sample_start in range(0,n_samples,2048):
+        sample=rng.random((min(2048,n_samples-sample_start),d))*ref
+        dominated=np.zeros(len(sample),dtype=bool)
+        for point_start in range(0,len(points),128):
+            candidates=points[point_start:point_start+128]
+            dominated |= np.any(np.all(sample[:,None,:]>=candidates[None,:,:],axis=2),axis=1)
+            if dominated.all(): break
+        dominated_count+=int(dominated.sum())
+    return float(np.prod(ref)*dominated_count/max(1,n_samples))
 
 
 def result_metrics(returned, reference, objectives, *, global_scales, profiles=None,

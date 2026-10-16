@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Run the registered comparison for one scenario. Requires frozen Core scales."""
 from __future__ import annotations
-import argparse, json, os, platform, subprocess, sys, time, tracemalloc
+import argparse, json, os, platform, subprocess, sys, time, threading
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 import pandas as pd
 import yaml
+import psutil
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"src"))
@@ -21,10 +22,49 @@ from pumo.objectives import OBJECTIVES
 OBJECTIVE_SETS=(("T","C"),("T","C","X"),("T","C","X","W"),
                 ("T","C","X","W","E"),OBJECTIVES)
 
+
+class _RssSampler:
+    """Sample process RSS during a route without tracing every Python allocation."""
+    def __init__(self, interval_s=0.01):
+        self.process = psutil.Process()
+        self.baseline = self.process.memory_info().rss
+        self.peak = self.baseline
+        self.interval_s = interval_s
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self._sample, daemon=True)
+
+    def _sample(self):
+        while not self.stop_event.wait(self.interval_s):
+            try:
+                self.peak = max(self.peak, self.process.memory_info().rss)
+            except psutil.Error:
+                return
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *_):
+        self.stop_event.set()
+        self.thread.join()
+        try:
+            self.peak = max(self.peak, self.process.memory_info().rss)
+        except psutil.Error:
+            pass
+
+    @property
+    def peak_delta_mib(self):
+        return max(0, self.peak - self.baseline) / 1024**2
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("scenario",choices=["core","mid","city"])
     ap.add_argument("--query-limit",type=int,default=None)
+    ap.add_argument("--per-cell-limit",type=int,default=None,
+                    help="keep at most this many seeded queries per distance/richness/departure stratum; retain metro sanity queries")
+    ap.add_argument("--timeout-s",type=float,default=None,
+                    help="per-algorithm query budget; profile/sweep sub-searches share this budget")
+    ap.add_argument("--label-cap",type=int,default=None)
     ap.add_argument("--algorithms",nargs="+",choices=["A1","A2","B0","W"],default=["A1","A2","B0","W"])
     ap.add_argument("--repetitions",type=int,default=None)
     ap.add_argument("--objective-sets",nargs="+",default=None,
@@ -47,6 +87,14 @@ def main():
     qpath=ROOT/"derived_data"/"benchmark"/f"queries_{scenario}.parquet"
     if not qpath.exists(): raise SystemExit(f"Generate queries first: python scripts/04_generate_queries.py {scenario}")
     queries=pd.read_parquet(qpath)
+    if args.per_cell_limit is not None:
+        if args.per_cell_limit <= 0:
+            raise SystemExit("--per-cell-limit must be positive")
+        metro=queries[queries.distance_band.eq("metro_sanity")]
+        ordinary=queries[~queries.distance_band.eq("metro_sanity")]
+        keys=[key for key in ("distance_band","transit_richness","departure_band") if key in ordinary]
+        ordinary=ordinary.groupby(keys,sort=False,group_keys=False).head(args.per_cell_limit)
+        queries=pd.concat([ordinary,metro]).sort_index()
     if args.query_limit: queries=queries.head(args.query_limit)
     radius=cfg["scenarios"]["core_radius_km"] if scenario=="core" else (cfg["scenarios"]["mid_radius_km"] if scenario=="mid" else None)
     preparation_started=time.perf_counter()
@@ -56,7 +104,10 @@ def main():
     profiles_frame=pd.read_csv(ROOT/"config"/"profiles.csv")
     profiles=[{k:float(row[col]) for k,col in zip(OBJECTIVES,profiles_frame.columns[1:])}
               for _,row in profiles_frame.iterrows()]
-    nrep=int(args.repetitions or cfg["repetitions"]); cap=int(cfg["label_cap"])
+    timeout_s=float(args.timeout_s if args.timeout_s is not None else cfg["timeout_s"])
+    if timeout_s <= 0: raise SystemExit("--timeout-s must be positive")
+    nrep=int(args.repetitions or cfg["repetitions"])
+    cap=int(args.label_cap if args.label_cap is not None else cfg["label_cap"])
     result_rows=[]; run_rows=[]; journey_file=ROOT/"results"/f"journeys_{scenario}.jsonl"
     (ROOT/"results").mkdir(exist_ok=True)
     if journey_file.exists(): journey_file.unlink()
@@ -66,7 +117,7 @@ def main():
       query_id=str(qrow.query_id)
       for objectives in objective_sets:
         per_method={}; stats_per={}; exact_all={}
-        q=Query(qbase[0],qbase[1],qbase[2],tuple(objectives),timeout_s=float(cfg["timeout_s"]),
+        q=Query(qbase[0],qbase[1],qbase[2],tuple(objectives),timeout_s=timeout_s,
                 max_transfers=int(cfg["max_transfers"]))
         for algorithm in args.algorithms:
           if algorithm=="A1" and scenario!="core": continue
@@ -79,33 +130,39 @@ def main():
             else: WeightedAStarRouter(net,scales=scales,label_cap=min(cap,10000),max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(Query(q.origin,q.destination,q.departure_time,("T","C"),{"T":1,"C":0},timeout_s=min(5.0,q.timeout_s)))
             warmed.add(algorithm)
           for rep in range(nrep):
-            tracemalloc.start(); start=time.perf_counter()
-            if algorithm=="A1": result=LabelSettingRouter(net,label_cap=cap).route(q)
-            elif algorithm=="A2": result=McRaptorRouter(net,label_cap=cap).route(q)
-            elif algorithm=="W": result=WeightSweepRouter(net,scales=scales,sweep_size=int(cfg["sweep_size"]),
-                    seed=int(cfg["seed"]),profiles=profiles,label_cap=cap,
-                    max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(q)
-            else:
-              candidates=[]; bstats=[]
-              for profile in profiles:
-                qb=Query(q.origin,q.destination,q.departure_time,q.objectives,profile,q.disruptions,
-                         q.start_state,q.max_transfers,q.timeout_s)
-                br=WeightedAStarRouter(net,scales=scales,label_cap=cap,
-                    max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(qb)
-                candidates.extend(br.journeys); bstats.append(br.stats)
-              from pumo.model import RouteResult
-              result=RouteResult(candidates,{"runtime_s":sum(s.get("runtime_s",0) for s in bstats),
-                "labels_generated":sum(s.get("labels_generated",0) for s in bstats),
-                "labels_expanded":sum(s.get("labels_expanded",0) for s in bstats),
-                "timed_out":any(s.get("timed_out") for s in bstats),
-                "label_cap_hit":any(s.get("label_cap_hit") for s in bstats),
-                "exact":all(s.get("exact",False) for s in bstats)})
-            elapsed=time.perf_counter()-start; _,peak=tracemalloc.get_traced_memory(); tracemalloc.stop()
-            reps.append(result); memory.append(peak/1024**2); calls.append(elapsed)
+            with _RssSampler() as memory_sample:
+              start=time.perf_counter()
+              if algorithm=="A1": result=LabelSettingRouter(net,label_cap=cap).route(q)
+              elif algorithm=="A2": result=McRaptorRouter(net,label_cap=cap).route(q)
+              elif algorithm=="W": result=WeightSweepRouter(net,scales=scales,sweep_size=int(cfg["sweep_size"]),
+                      seed=int(cfg["seed"]),profiles=profiles,label_cap=cap,
+                      max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(q)
+              else:
+                candidates=[]; bstats=[]; profile_started=time.perf_counter(); deadline=profile_started+q.timeout_s
+                for profile in profiles:
+                  remaining=deadline-time.perf_counter()
+                  if remaining <= 0: break
+                  qb=Query(q.origin,q.destination,q.departure_time,q.objectives,profile,q.disruptions,
+                           q.start_state,q.max_transfers,remaining)
+                  br=WeightedAStarRouter(net,scales=scales,label_cap=cap,
+                      max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(qb)
+                  candidates.extend(br.journeys); bstats.append(br.stats)
+                  if br.stats.get("timed_out") or time.perf_counter() >= deadline: break
+                from pumo.model import RouteResult
+                total_profile_runtime=time.perf_counter()-profile_started
+                result=RouteResult(candidates,{"runtime_s":total_profile_runtime,
+                  "total_runtime_s":total_profile_runtime,
+                  "labels_generated":sum(s.get("labels_generated",0) for s in bstats),
+                  "labels_expanded":sum(s.get("labels_expanded",0) for s in bstats),
+                  "timed_out":any(s.get("timed_out") for s in bstats) or len(bstats)<len(profiles),
+                  "label_cap_hit":any(s.get("label_cap_hit") for s in bstats),
+                  "exact":len(bstats)==len(profiles) and all(s.get("exact",False) for s in bstats)})
+              elapsed=time.perf_counter()-start
+            reps.append(result); memory.append(memory_sample.peak_delta_mib); calls.append(elapsed)
             run_rows.append({"query_id":query_id,"scenario":scenario,"algorithm":algorithm,
               "objective_set":"".join(objectives),"objectives":",".join(objectives),"repetition":rep,
               "seed":int(qrow.seed),"distance_band":qrow.distance_band,
-              "runtime_s":elapsed,"memory_peak_mib":peak/1024**2,
+              "runtime_s":elapsed,"memory_peak_mib":memory_sample.peak_delta_mib,
               "labels_generated":result.stats.get("labels_generated",0),"labels_expanded":result.stats.get("labels_expanded",0),
               "journeys_returned":len(result.journeys),"timed_out":result.stats.get("timed_out",False),
               "label_cap_hit":result.stats.get("label_cap_hit",False),"exact":result.stats.get("exact",False),
@@ -176,11 +233,15 @@ def main():
     for package in ("numpy","pandas","pyarrow","geopandas","shapely","pyproj","scipy","pyrosm","psutil","matplotlib"):
         try: package_versions[package]=version(package)
         except PackageNotFoundError: package_versions[package]=None
-    metadata={"scenario":scenario,"query_count":len(queries),"objective_sets":["".join(o) for o in objective_sets],
+    effective_cfg=dict(cfg)
+    effective_cfg["timeout_s"]=timeout_s; effective_cfg["label_cap"]=cap; effective_cfg["repetitions"]=nrep
+    metadata={"scenario":scenario,"protocol_version":"1.5","query_count":len(queries),
+        "source_query_count":int(len(pd.read_parquet(qpath))),
+        "queries_per_cell_limit":args.per_cell_limit,"objective_sets":["".join(o) for o in objective_sets],
         "repetitions":nrep,"seed":cfg["seed"],"python":platform.python_version(),"platform":platform.platform(),
         "cpu":platform.processor(),"cpu_count":os.cpu_count(),"ram_bytes":memory_total,"git_revision":revision,
         "package_versions":package_versions,"network_preprocessing_s":preparation_s,"scales":scales,
-        "configuration":cfg}
+        "configuration":effective_cfg}
     (ROOT/"results"/f"run_metadata_{scenario}.json").write_text(json.dumps(metadata,indent=2),encoding="utf-8")
     print(summary.to_string(index=False)); print(json.dumps(metadata,indent=2))
 

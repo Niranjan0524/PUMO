@@ -3,7 +3,7 @@ from pumo.algos.mcraptor import McRaptorRouter
 from pumo.algos.weight_sweep import WeightSweepRouter
 from pumo.algos.weighted_astar import WeightedAStarRouter
 from pumo.algos.weighted_astar import time_lower_bound
-from pumo.model import Disruption, JourneyState, Query
+from pumo.model import Disruption, JourneyState, Query, RouteResult
 from pumo.network import PreparedNetwork, Transition
 from pumo.algos.base import edge_arrival
 from pumo.objectives import OBJECTIVES
@@ -171,6 +171,19 @@ def test_weight_sweep_is_nondominated_and_misses_unsupported_point():
     assert result.stats["weight_vectors_run"]==30
     assert len(result.stats["per_weight_runtime_s"])==30
     assert result.stats["supported_front_only"]
+
+
+def test_weight_sweep_shares_query_timeout_across_vectors(monkeypatch):
+    class TimedOutRouter:
+        def __init__(self,*args,**kwargs): pass
+        def route(self,q):
+            return RouteResult([],{"runtime_s":q.timeout_s,"timed_out":True,
+                                   "label_cap_hit":False,"exact":False})
+    monkeypatch.setattr("pumo.algos.weight_sweep.WeightedAStarRouter",TimedOutRouter)
+    result=WeightSweepRouter(unsupported_toy_network(),scales={"T":1,"C":1},
+                             sweep_size=30,profiles=[]).route(query())
+    assert result.stats["weight_vectors_run"]==1
+    assert result.stats["timed_out"] and not result.stats["exact"]
 
 
 def test_weight_sweep_seeded_vectors_and_runtime_stats_are_reproducible():

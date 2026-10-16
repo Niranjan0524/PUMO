@@ -198,15 +198,24 @@ class McRaptorRouter(Router):
             round_bags.append({})
             previous_bag = round_bags[round_index - 1]
             for node, prior_indices in list(previous_bag.items()):
+                if time.perf_counter() >= deadline:
+                    budget["timed_out"] = True
+                    break
                 for prior_index in list(prior_indices):
+                    if time.perf_counter() >= deadline:
+                        budget["timed_out"] = True
+                        break
                     if not labels[prior_index].alive or is_pruned(prior_index):
                         continue
                     expanded += 1
                     prior = labels[prior_index]
                     board_edges = [edge for edge in net.transitions_from(
-                        node, prior.arrival, None, disruptions=q.disruptions)
+                        node, prior.arrival, None, disruptions=q.disruptions, deadline=deadline)
                         if edge.mode != "WALK"]
                     for first_edge in board_edges:
+                        if time.perf_counter() >= deadline:
+                            budget["timed_out"] = True
+                            break
                         arrival = edge_arrival(first_edge, prior.arrival, on_trip=None)
                         if arrival is None or arrival <= prior.arrival:
                             continue
@@ -227,7 +236,7 @@ class McRaptorRouter(Router):
                                 break
                             next_edges = [edge for edge in net.transitions_from(
                                 current.node, current.arrival, trip_id,
-                                disruptions=q.disruptions)
+                                disruptions=q.disruptions, deadline=deadline)
                                 if edge.mode != "WALK" and edge.trip_id == trip_id]
                             if not next_edges:
                                 break

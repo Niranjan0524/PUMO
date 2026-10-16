@@ -1,0 +1,35 @@
+{
+  "protocol_version": "1.5",
+  "experiment": "W sweep-size sensitivity",
+  "scenario": "city",
+  "query_count": 3,
+  "query_ids": [
+    "city-00000",
+    "city-00032",
+    "city-00064"
+  ],
+  "objective_set": "TCXWES",
+  "sweep_sizes_requested": [
+    10,
+    25,
+    50
+  ],
+  "timeout_s": 5.0,
+  "label_cap": 10000,
+  "repetitions": 1,
+  "seed": 20261016,
+  "network_preprocessing_s": 45.22949919999519,
+  "python": "3.13.1",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+  "git_revision": "c3b62c198f4c06dae129393f4c89908122f09290",
+  "package_versions": {
+    "numpy": "2.5.4",
+    "pandas": "2.3.0",
+    "pyarrow": "25.0.1",
+    "geopandas": "1.2.0",
+    "shapely": "2.2.0",
+    "pyproj": "3.8.0",
+    "scipy": "1.16.0"
+  }
+}

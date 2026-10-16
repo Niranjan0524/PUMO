@@ -1,0 +1,72 @@
+{
+  "scenario": "core",
+  "protocol_version": "1.5",
+  "query_count": 21,
+  "source_query_count": 165,
+  "queries_per_cell_limit": 1,
+  "objective_sets": [
+    "TC",
+    "TCXWES"
+  ],
+  "repetitions": 1,
+  "seed": 20261016,
+  "python": "3.13.1",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+  "cpu_count": 12,
+  "ram_bytes": 16831897600,
+  "git_revision": "c3b62c198f4c06dae129393f4c89908122f09290",
+  "package_versions": {
+    "numpy": "2.5.4",
+    "pandas": "2.3.0",
+    "pyarrow": "25.0.1",
+    "geopandas": "1.2.0",
+    "shapely": "2.2.0",
+    "pyproj": "3.8.0",
+    "scipy": "1.16.0",
+    "pyrosm": "0.21.0",
+    "psutil": "7.0.0",
+    "matplotlib": "3.10.3"
+  },
+  "network_preprocessing_s": 8.588762899991707,
+  "scales": {
+    "T": 1714.25,
+    "C": 1.9,
+    "X": 1.0,
+    "W": 2022.3108107109283,
+    "E": 3.112559882041227,
+    "S": 547.00242987349
+  },
+  "configuration": {
+    "seed": 20261016,
+    "service_date": null,
+    "walk_speed_mps": 1.33,
+    "max_speed_cap_mps": 40.0,
+    "footpath_options": 3,
+    "access_radius_m": 600,
+    "transfer_radius_m": 400,
+    "max_transfers": 4,
+    "label_cap": 10000,
+    "timeout_s": 5.0,
+    "sweep_size": 50,
+    "repetitions": 1,
+    "monte_carlo_samples": 100000,
+    "scales": {
+      "T": 1714.25,
+      "C": 1.9,
+      "X": 1.0,
+      "W": 2022.3108107109283,
+      "E": 3.112559882041227,
+      "S": 547.00242987349
+    },
+    "scenarios": {
+      "core_radius_km": 3,
+      "mid_radius_km": 8
+    },
+    "comparison": {
+      "min_hypervolume_ratio": 0.95,
+      "max_chebyshev_regret": 0.05,
+      "runtime_tie_fraction": 0.1
+    }
+  }
+}

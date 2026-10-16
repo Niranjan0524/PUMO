@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from collections import defaultdict
 from math import hypot
+import time
 
 import geopandas as gpd
 import numpy as np
@@ -62,12 +63,14 @@ class PreparedNetwork:
         self._tree = None
         self._node_order = None
         self._distance_bound_scale = None
+        self._observed_max_speed_mps = 0.0
         for edge in edges:
             self.add(edge)
 
     def add(self, edge: Transition):
         if edge.mode == "WALK": self.walk[int(edge.from_node)].append(edge)
         else: self.transit[int(edge.from_node)].append(edge)
+        self._observe_speed(edge)
         self.coords.setdefault(int(edge.from_node), (0.0, 0.0))
         self.coords.setdefault(int(edge.to_node), (0.0, 0.0))
 
@@ -75,6 +78,23 @@ class PreparedNetwork:
         if edge.mode != "WALK":
             raise ValueError("footpath transitions must use WALK mode")
         self.footpaths[int(edge.from_node)].append(edge)
+        self._observe_speed(edge)
+
+    def _observe_speed(self, edge: Transition):
+        if edge.mode == "WALK":
+            duration = edge.walk_time_s
+        elif edge.departure_time is not None and edge.arrival_time is not None:
+            duration = edge.arrival_time - edge.departure_time
+        else:
+            return
+        if duration > 0 and edge.distance_m > 0:
+            self._observed_max_speed_mps = max(
+                self._observed_max_speed_mps, float(edge.distance_m) / duration)
+
+    @property
+    def max_observed_speed_mps(self):
+        return (self._observed_max_speed_mps if self._observed_max_speed_mps > 0
+                else float("inf"))
 
     def finalize(self):
         for node in self.transit:
@@ -125,8 +145,9 @@ class PreparedNetwork:
         return self.straight_line_distance_m(node_a, node_b) * self._distance_bound_scale
 
     def transitions_from(self, node: int, current_time: int, on_trip: str | None,
-                        *, boarding_buffer_s: int | None = None, disruptions=()):
+                        *, boarding_buffer_s: int | None = None, disruptions=(), deadline=None):
         for edge in self.walk.get(int(node), ()):
+            if deadline is not None and time.perf_counter() >= deadline: return
             adjusted = _apply_disruption(edge, current_time, disruptions)
             if adjusted is not None: yield adjusted
         buffer_s = self.boarding_buffer_s if boarding_buffer_s is None else int(boarding_buffer_s)
@@ -134,7 +155,8 @@ class PreparedNetwork:
         if not edges: return
         earliest: dict[object, Transition] = {}
         on_trip_edges = []
-        for edge in edges:
+        for i, edge in enumerate(edges):
+            if i % 128 == 0 and deadline is not None and time.perf_counter() >= deadline: return
             edge = _apply_disruption(edge, current_time, disruptions)
             if edge is None: continue
             dep = int(edge.departure_time)

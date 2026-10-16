@@ -71,12 +71,17 @@ class WeightSweepRouter(Router):
                                       label_cap=self.label_cap,
                                       max_speed_cap_mps=self.max_speed_cap_mps)
         for weights in vectors:
+            remaining = float(q.timeout_s) - (time.perf_counter() - started)
+            if remaining <= 0:
+                break
             weighted_query = Query(q.origin, q.destination, q.departure_time,
                                    q.objectives, weights, q.disruptions,
-                                   q.start_state, q.max_transfers, q.timeout_s)
+                                   q.start_state, q.max_transfers, remaining)
             result = router.route(weighted_query)
             run_stats.append(result.stats)
             journeys.extend(result.journeys)
+            if result.stats.get("timed_out") or time.perf_counter() - started >= q.timeout_s:
+                break
 
         by_path = {}
         for journey in journeys:
@@ -92,16 +97,18 @@ class WeightSweepRouter(Router):
             "total_runtime_s": total_runtime,
             "sweep_size_requested": self.sweep_size,
             "sweep_size": len(vectors),
-            "weight_vectors_run": len(vectors),
+            "weight_vectors_run": len(run_stats),
             "weight_vectors": vectors,
             "per_weight_runtime_s": per_weight_runtime,
             "distinct_journeys": len(by_path),
             "mean_runtime_per_weight_s": sum(per_weight_runtime) / max(1, len(per_weight_runtime)),
             "labels_generated": sum(stats.get("labels_generated", 0) for stats in run_stats),
             "labels_expanded": sum(stats.get("labels_expanded", 0) for stats in run_stats),
-            "timed_out": any(stats.get("timed_out", False) for stats in run_stats),
+            "timed_out": (any(stats.get("timed_out", False) for stats in run_stats) or
+                          len(run_stats) < len(vectors)),
             "label_cap_hit": any(stats.get("label_cap_hit", False) for stats in run_stats),
-            "exact": all(stats.get("exact", False) for stats in run_stats),
+            "exact": (len(run_stats) == len(vectors) and
+                      all(stats.get("exact", False) for stats in run_stats)),
             "supported_front_only": True,
             "limitation": "weighted sums can miss unsupported Pareto points",
         })

@@ -45,6 +45,7 @@ class WeightedAStarRouter(Router):
         if q.profile_weights is None:
             raise ValueError("B0 requires profile_weights")
         started = time.perf_counter()
+        deadline = started + float(q.timeout_s)
         net = self.network
         source, departure = query_start(q, net)
         target = net.nearest_node(q.destination)
@@ -83,7 +84,7 @@ class WeightedAStarRouter(Router):
         timed_out = cap_hit = False
 
         while queue:
-            if time.perf_counter() - started >= q.timeout_s:
+            if time.perf_counter() >= deadline:
                 timed_out = True
                 break
             f_score, _, _, index = heapq.heappop(queue)
@@ -99,7 +100,7 @@ class WeightedAStarRouter(Router):
                 continue
 
             for edge in net.transitions_from(label.node, label.arrival, label.on_trip,
-                                             disruptions=q.disruptions):
+                                             disruptions=q.disruptions, deadline=deadline):
                 arrival = edge_arrival(edge, label.arrival, on_trip=label.on_trip)
                 if arrival is None or arrival <= label.arrival:
                     continue
@@ -135,7 +136,8 @@ class WeightedAStarRouter(Router):
                 if generated >= self.label_cap:
                     cap_hit = True
                     break
-            if cap_hit:
+            if time.perf_counter() >= deadline: timed_out = True
+            if cap_hit or timed_out:
                 break
 
         journeys = []
@@ -181,6 +183,9 @@ def _better_goal(candidate: _ScalarLabel, incumbent: _ScalarLabel) -> bool:
 
 def _max_speed(net):
     """Maximum observed positive edge speed, in metres per second."""
+    cached = getattr(net, "max_observed_speed_mps", None)
+    if cached is not None:
+        return float(cached)
     maximum = 0.0
     for adjacency in (net.walk, net.transit):
         for edges in adjacency.values():
@@ -194,7 +199,12 @@ def _max_speed(net):
                 if duration > 0 and edge.distance_m > 0:
                     maximum = max(maximum, edge.distance_m / duration)
     # No defensible speed bound means a zero heuristic, represented by infinity.
-    return maximum if maximum > 0 and math.isfinite(maximum) else math.inf
+    maximum = maximum if maximum > 0 and math.isfinite(maximum) else math.inf
+    try:
+        net._observed_max_speed_mps = maximum
+    except (AttributeError, TypeError):
+        pass
+    return maximum
 
 
 def time_lower_bound(net, node, target, weights, scales, max_speed, objectives=OBJECTIVES):

@@ -31,6 +31,7 @@ class LabelSettingRouter(Router):
         if getattr(self.network, "scenario", "core") not in {"core", "toy"}:
             raise ValueError("A1 is restricted to the Core scenario")
         started = time.perf_counter()
+        deadline = started + float(q.timeout_s)
         net = self.network
         source, departure = query_start(q, net); target = net.nearest_node(q.destination)
         initial = {name: 0.0 for name in OBJECTIVES}; initial["T"] = float(departure)
@@ -41,7 +42,7 @@ class LabelSettingRouter(Router):
         generated = expanded = 0
         timed_out = cap_hit = False
         while queue:
-            if time.perf_counter() - started >= q.timeout_s:
+            if time.perf_counter() >= deadline:
                 timed_out = True; break
             _, index = heapq.heappop(queue)
             label = labels[index]
@@ -52,7 +53,8 @@ class LabelSettingRouter(Router):
             if label.node == target:
                 _add_goal(goals, labels, index, q.objectives)
                 continue
-            for edge in net.transitions_from(label.node, label.arrival, label.on_trip, disruptions=q.disruptions):
+            for edge in net.transitions_from(label.node, label.arrival, label.on_trip,
+                                             disruptions=q.disruptions, deadline=deadline):
                 arrival = edge_arrival(edge, label.arrival, on_trip=label.on_trip)
                 if arrival is None or arrival <= label.arrival: continue
                 trip = edge.trip_id if edge.mode != "WALK" else None
@@ -88,7 +90,8 @@ class LabelSettingRouter(Router):
                 if generated >= self.label_cap:
                     cap_hit = True; break
                 heapq.heappush(queue, (arrival, idx))
-            if cap_hit: break
+            if time.perf_counter() >= deadline: timed_out = True
+            if cap_hit or timed_out: break
         # A cap or timeout can stop with an undispatched target label in the
         # queue. Include every target label already discovered in the partial
         # result, then apply the same shared Pareto filter as completed runs.
