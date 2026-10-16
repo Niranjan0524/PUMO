@@ -72,7 +72,9 @@ def result_metrics(returned, reference, objectives, *, global_scales, profiles=N
     r,ref=normalize_pair(returned,reference,objectives,global_scales)
     metric={"n_returned":len(r),"n_reference":len(ref)}
     if len(r) and len(ref):
-        metric["recall"]=sum(any(epsilon_match(rv,refv,relative=epsilon) for rv in ref) for rv in ref)/len(ref)
+        raw_r=_matrix(returned,objectives); raw_ref=_matrix(reference,objectives)
+        metric["recall"]=sum(any(epsilon_match(rv,refv,relative=epsilon) for rv in raw_r)
+                             for refv in raw_ref)/len(raw_ref)
         metric["dominated_fraction"]=sum(any(dominates(refv,rv) for refv in ref) for rv in r)/len(r)
         reference_point=np.full(len(objectives),1.1)
         if len(objectives)<=4:

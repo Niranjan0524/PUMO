@@ -32,7 +32,7 @@
 4. Runtime within 10% is a tie; compare peak memory, then preprocessing cost.
 5. If no method qualifies, report the highest-quality method and state that none met the gate.
 6. A1 passes the Core gate by definition only on its exact queries. Report its runtime, label growth, objective scaling, and offline practicality separately. B0 cannot win.
-7. Customizability for new objectives, disruptions, and profiles is a qualitative note, not part of the decision rule.
+7. Customizability for selected objective subsets and preference profiles is a qualitative note, not part of the decision rule. Disruption handling and rerouting are outside this benchmark and reserved for future work.
 
 ## Limitations to report
 

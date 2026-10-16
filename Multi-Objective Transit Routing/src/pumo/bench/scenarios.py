@@ -23,6 +23,13 @@ def generate_queries(prepared_dir, scenario, *, seed=20261016, per_cell=None,
     keep=np.ones(len(nodes),dtype=bool) if not np.isfinite(radius) else np.linalg.norm(node_xy-center,axis=1)<=radius
     local_xy=node_xy[keep]; local_nodes=nodes.iloc[np.flatnonzero(keep)].reset_index(drop=True)
     local_tree=cKDTree(local_xy)
+    nearby_counts=np.asarray(stop_tree.query_ball_point(local_xy,r=access_radius_m,return_length=True))
+    richness_order=np.argsort(nearby_counts,kind="stable")
+    richness_size=max(1,len(richness_order)//3)
+    richness_nodes={
+        "low":set(richness_order[:richness_size].tolist()),
+        "high":set(richness_order[-richness_size:].tolist()),
+    }
     departure=conns.dep_time.dropna().to_numpy(dtype=np.int64)
     bands={"morning_peak":(5*3600,10*3600),"midday":(10*3600,16*3600),
            "evening_peak":(16*3600,20*3600),"late_evening":(20*3600,30*3600)}
@@ -31,7 +38,6 @@ def generate_queries(prepared_dir, scenario, *, seed=20261016, per_cell=None,
     dist_bands={"short":(1000,3000),"medium":(3000,8000),"long":(8000,float("inf"))}
     defaults={"core":10,"mid":6,"city":4}; need=int(per_cell if per_cell is not None else defaults[scenario.lower()])
     queries=[]; cell_counts={}
-    def richness(x): return len(stop_tree.query_ball_point(x,access_radius_m))
     for distance_name,(dmin,dmax) in dist_bands.items():
       if np.isfinite(radius) and dmin >= 2*radius: continue
       search_radius=min(dmax,2*radius) if np.isfinite(dmax) and np.isfinite(radius) else (2*radius if np.isfinite(radius) else dmax)
@@ -40,18 +46,14 @@ def generate_queries(prepared_dir, scenario, *, seed=20261016, per_cell=None,
         key=f"{distance_name}|{transit_class}|{time_band}"; made=0; attempts=0
         while made<need and attempts<max(200,need*100):
             attempts+=1; oi=int(rng.integers(len(local_xy))); origin=local_xy[oi]
-            count_o=richness(origin)
-            if transit_class=="low" and count_o>1: continue
-            if transit_class=="high" and count_o<3: continue
+            if oi not in richness_nodes[transit_class]: continue
             candidates=local_tree.query_ball_point(origin,search_radius)
             if len(candidates)<2: continue
             di=int(rng.choice(candidates));
             if di==oi: continue
             dist=float(np.linalg.norm(local_xy[di]-origin))
             if not dmin<=dist<dmax: continue
-            count_d=richness(local_xy[di])
-            if transit_class=="low" and count_d>1: continue
-            if transit_class=="high" and count_d<3: continue
+            if di not in richness_nodes[transit_class]: continue
             a=local_nodes.iloc[oi]; b=local_nodes.iloc[di]
             nearest_a=int(stops.iloc[int(stop_tree.query(origin)[1])].stop_idx)
             nearest_b=int(stops.iloc[int(stop_tree.query(local_xy[di])[1])].stop_idx)

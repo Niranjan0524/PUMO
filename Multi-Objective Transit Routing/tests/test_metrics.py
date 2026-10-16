@@ -1,5 +1,5 @@
 import numpy as np
-from pumo.bench.metrics import hypervolume, hypervolume_mc
+from pumo.bench.metrics import hypervolume, hypervolume_mc, result_metrics
 
 
 def test_exact_hypervolume_two_dimensions():
@@ -15,3 +15,10 @@ def test_monte_carlo_hypervolume_matches_exact_on_toy():
     exact=hypervolume(points,[1,1])
     estimate=hypervolume_mc(points,[1,1],samples=200_000,seed=3)
     assert abs(exact-estimate)<.01
+
+
+def test_recall_counts_reference_journeys_missing_from_returned_set():
+    reference=[{"T":1.0,"C":5.0},{"T":5.0,"C":1.0}]
+    returned=[reference[0]]
+    metrics=result_metrics(returned,reference,("T","C"),global_scales={"T":10,"C":10})
+    assert metrics["recall"]==0.5

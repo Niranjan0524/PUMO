@@ -41,13 +41,6 @@ if "distance_band" in raw:
     fig,ax=plt.subplots(figsize=(7,4)); raw.boxplot(column="runtime_s",by="distance_band",ax=ax)
     ax.set_title("Query runtime by distance band"); ax.set_xlabel("Distance band"); ax.set_ylabel("Runtime (s)")
     fig.suptitle(""); fig.tight_layout(); fig.savefig(figure_dir/"runtime_by_distance_band.png",dpi=160); plt.close(fig)
-disruption_path=ROOT/"results"/"disruptions_core.csv"
-if disruption_path.exists():
-    dr=pd.read_csv(disruption_path); fig,ax=plt.subplots(figsize=(7,4))
-    dr.boxplot(column="reroute_latency_s",by="algorithm",ax=ax); ax.set_title("Disruption rerouting latency")
-    ax.set_xlabel("Algorithm"); ax.set_ylabel("Latency (s)"); fig.suptitle(""); fig.tight_layout()
-    fig.savefig(figure_dir/"disruption_latency.png",dpi=160); plt.close(fig)
-
 def table(frame): return frame.to_markdown(index=True,floatfmt=".3f") if len(frame) else "No qualifying rows were produced."
 if winner:
     decision=f"**{winner}** wins among Core-eligible Pareto methods by mean Mid/City p95 runtime ({runtime[winner]:.3f} s)."
@@ -109,7 +102,7 @@ slide=f'''# PUMO routing algorithms — slide summary
 
 - **Question:** which Pareto-set method best fits this Bengaluru multimodal dataset under the registered quality and runtime rule?
 - **Compared:** B0 weighted-sum A*, W weight-sweep, A2 McRAPTOR-style rounds, and Core-only exact A1.
-- **Measured:** runtime and memory, labels, Pareto recall, hypervolume, linear and Chebyshev regret, failures, objective scaling and rerouting.
+- **Measured:** runtime and memory, labels, Pareto recall, hypervolume, linear and Chebyshev regret, failures, and objective scaling.
 - **Decision:** {winner if winner else 'No Pareto-set method met the Core quality gate.'} {f'It had mean Mid/City p95 runtime {runtime[winner]:.3f} s.' if winner else ''}
 - **Interpretation:** W is fast but misses unsupported compromises; A2 retains a broader front at query time; A1 provides a small-region reference but may hit the label cap.
 - **Caveats:** metro times can be approximate; fares/emissions are placeholders; safety is a proxy based on available layers; Mid/City reference sets are optimistic.

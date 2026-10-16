@@ -27,7 +27,18 @@ def main():
     ap.add_argument("--query-limit",type=int,default=None)
     ap.add_argument("--algorithms",nargs="+",choices=["A1","A2","B0","W"],default=["A1","A2","B0","W"])
     ap.add_argument("--repetitions",type=int,default=None)
+    ap.add_argument("--objective-sets",nargs="+",default=None,
+                    help="objective subsets, each written as comma-separated codes (for example T,C,W)")
     args=ap.parse_args(); scenario=args.scenario.lower()
+    objective_sets=OBJECTIVE_SETS
+    if args.objective_sets:
+        parsed=[]
+        for value in args.objective_sets:
+            names=tuple(part.strip().upper() for part in value.split(",") if part.strip())
+            if not names or len(names)!=len(set(names)) or set(names)-set(OBJECTIVES):
+                raise SystemExit(f"Invalid objective set {value!r}; use unique codes from {','.join(OBJECTIVES)}")
+            parsed.append(names)
+        objective_sets=tuple(parsed)
     protocol=ROOT/"docs"/"BENCHMARK_PROTOCOL.md"
     if not protocol.exists(): raise SystemExit("Register docs/BENCHMARK_PROTOCOL.md before running the benchmark")
     cfg=yaml.safe_load((ROOT/"config"/"benchmark.yaml").read_text(encoding="utf-8"))
@@ -53,7 +64,7 @@ def main():
     for qrow in queries.itertuples(index=False):
       qbase=(float(qrow.origin_lat),float(qrow.origin_lon)),(float(qrow.destination_lat),float(qrow.destination_lon)),int(qrow.departure_time)
       query_id=str(qrow.query_id)
-      for objectives in OBJECTIVE_SETS:
+      for objectives in objective_sets:
         per_method={}; stats_per={}; exact_all={}
         q=Query(qbase[0],qbase[1],qbase[2],tuple(objectives),timeout_s=float(cfg["timeout_s"]),
                 max_transfers=int(cfg["max_transfers"]))
@@ -139,7 +150,10 @@ def main():
         for key in ("recall","dominated_fraction","hypervolume_ratio","linear_profile_regret","chebyshev_regret","reference_type"):
             if key in quality: row[key]=quality[key]
     raw=pd.DataFrame(run_rows)
-    raw.to_csv(ROOT/"results"/"raw_runs.csv",index=False)
+    raw.to_csv(ROOT/"results"/f"raw_runs_{scenario}.csv",index=False)
+    scenario_raw=[pd.read_csv(path) for path in sorted((ROOT/"results").glob("raw_runs_*.csv"))]
+    if scenario_raw:
+        pd.concat(scenario_raw,ignore_index=True).to_csv(ROOT/"results"/"raw_runs.csv",index=False)
     query_summary=raw.groupby(["scenario","query_id","algorithm","objective_set"],as_index=False).agg(
         query_runtime_s=("runtime_s","median"),memory_peak_mib=("memory_peak_mib","max"),
         journeys_returned=("journeys_returned","median"),labels_generated=("labels_generated","median"),
@@ -162,7 +176,7 @@ def main():
     for package in ("numpy","pandas","pyarrow","geopandas","shapely","pyproj","scipy","pyrosm","psutil","matplotlib"):
         try: package_versions[package]=version(package)
         except PackageNotFoundError: package_versions[package]=None
-    metadata={"scenario":scenario,"query_count":len(queries),"objective_sets":["".join(o) for o in OBJECTIVE_SETS],
+    metadata={"scenario":scenario,"query_count":len(queries),"objective_sets":["".join(o) for o in objective_sets],
         "repetitions":nrep,"seed":cfg["seed"],"python":platform.python_version(),"platform":platform.platform(),
         "cpu":platform.processor(),"cpu_count":os.cpu_count(),"ram_bytes":memory_total,"git_revision":revision,
         "package_versions":package_versions,"network_preprocessing_s":preparation_s,"scales":scales,
