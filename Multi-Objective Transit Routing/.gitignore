@@ -1,0 +1,29 @@
+# Large transit dataset
+./Data/bmtc/shapes.txt
+
+# OpenStreetMap downloaded files
+*.osm
+*.osm.pbf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.*
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
