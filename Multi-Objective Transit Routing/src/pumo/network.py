@@ -32,6 +32,7 @@ class Transition:
     pattern_id: int | str | None = None
     departure_time: int | None = None
     arrival_time: int | None = None
+    segment_ids: tuple[str, ...] = ()
 
 
 class PreparedNetwork:
@@ -52,6 +53,7 @@ class PreparedNetwork:
         self.fare_per_boarding = fare_per_boarding or {"BUS": 1.0, "METRO": 0.5}
         self.emission_factors = emission_factors or {"WALK": 0.0, "BUS": 1.0, "METRO": .5}
         self.walk: dict[int, list[Transition]] = defaultdict(list)
+        self.footpaths: dict[int, list[Transition]] = defaultdict(list)
         self.transit: dict[int, list[Transition]] = defaultdict(list)
         self.stop_nodes: dict[int, int] = {}
         self.node_stops: dict[int, list[int]] = defaultdict(list)
@@ -68,6 +70,11 @@ class PreparedNetwork:
         else: self.transit[int(edge.from_node)].append(edge)
         self.coords.setdefault(int(edge.from_node), (0.0, 0.0))
         self.coords.setdefault(int(edge.to_node), (0.0, 0.0))
+
+    def add_footpath(self, edge: Transition):
+        if edge.mode != "WALK":
+            raise ValueError("footpath transitions must use WALK mode")
+        self.footpaths[int(edge.from_node)].append(edge)
 
     def finalize(self):
         for node in self.transit:
@@ -183,6 +190,20 @@ class PreparedNetwork:
         for row in stops.itertuples(index=False):
             net.stop_nodes[int(row.stop_idx)] = int(row.node_idx)
             net.node_stops[int(row.node_idx)].append(int(row.stop_idx))
+        footpath_path = p / "footpaths.parquet"
+        if footpath_path.exists():
+            footpaths = pd.read_parquet(footpath_path)
+            for row in footpaths.itertuples(index=False):
+                from_stop, to_stop = int(row.from_stop), int(row.to_stop)
+                if from_stop not in net.stop_nodes or to_stop not in net.stop_nodes:
+                    continue
+                raw_edge_ids = getattr(row, "edge_ids", ())
+                edge_ids = tuple(str(edge_id) for edge_id in raw_edge_ids) if raw_edge_ids is not None else ()
+                net.add_footpath(Transition(
+                    net.stop_nodes[from_stop], net.stop_nodes[to_stop], "WALK",
+                    f"footpath:{from_stop}>{to_stop}:{int(getattr(row, 'option_idx', 0))}",
+                    walk_time_s=int(row.walk_time_s), distance_m=float(row.distance_m),
+                    risk=float(row.risk_exposure), segment_ids=edge_ids))
         st = connections[connections.from_stop.isin(stops.stop_idx) & connections.to_stop.isin(stops.stop_idx)].copy()
         st = st.merge(stops[["stop_idx", "node_idx", "lat", "lon"]].rename(columns={"stop_idx":"from_stop", "node_idx":"from_node", "lat":"from_lat", "lon":"from_lon"}), on="from_stop")
         st = st.merge(stops[["stop_idx", "node_idx", "lat", "lon"]].rename(columns={"stop_idx":"to_stop", "node_idx":"to_node", "lat":"to_lat", "lon":"to_lon"}), on="to_stop")

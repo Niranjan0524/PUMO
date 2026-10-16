@@ -60,7 +60,7 @@ report=f'''# Multi-objective routing algorithm comparison
 
 Prepared service date: 2026-09-07. The graph contains 801,929 walking nodes and 1,779,614 directed walking edges. The prepared timetable contains 8,892 stops, 4,437 routes, 52,430 active trips, and 1,273,590 connections. See [`../derived_data/DATA_REPORT.md`](../derived_data/DATA_REPORT.md) for source coverage and caveats.
 
-All four algorithms use the same prepared network and objective definitions: A1 exact label-setting (Core only), A2 connection-adjacency round search, B0 weighted A*, and W repeated B0 weight-sweep. A2 uses round-indexed Pareto bags over the shared connection adjacency; it currently traverses the shared walk graph rather than limiting walking to only stop footpaths, a deviation from canonical McRAPTOR.
+All four algorithms use the same prepared network and objective definitions: A1 exact label-setting (Core only), A2 connection-adjacency round search, B0 weighted A*, and W repeated B0 weight-sweep. A2 uses round-indexed Pareto bags over trip scans, bounded street-graph access and egress options, and prepared stop-to-stop footpaths between transit rounds. Walking-option and label caps are reported as inexact when reached.
 
 ## Results
 

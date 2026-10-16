@@ -74,7 +74,8 @@ def make_legs(path, departure_time: int):
     for edge, arrival, contribution in path:
         mode = edge.mode
         dep = current_time if mode == "WALK" else int(edge.departure_time)
+        segment_ids = tuple(getattr(edge, "segment_ids", ())) or (edge.segment_id,)
         legs.append(Leg(mode, str(edge.from_node), str(edge.to_node), dep, int(arrival),
-                        [edge.segment_id], contribution))
+                        list(segment_ids), contribution))
         current_time = int(arrival)
     return legs

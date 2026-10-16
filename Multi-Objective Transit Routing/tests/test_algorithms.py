@@ -65,6 +65,63 @@ def test_a1_timeout_is_reported_as_inexact():
     assert result.stats["timed_out"] and not result.stats["exact"]
 
 
+def test_a2_uses_walking_access_and_egress_paths():
+    net=PreparedNetwork({0:(12.9,77.5),1:(12.90001,77.50001),
+                         2:(12.90002,77.50002),3:(12.90003,77.50003)},
+                        boarding_buffer_s=0,coordinates_are_wgs84=True)
+    net.add(Transition(0,1,"WALK","access",walk_time_s=5,distance_m=5))
+    net.add(Transition(1,2,"BUS","bus",trip_id="bus",pattern_id="bus",
+                       departure_time=10,arrival_time=20))
+    net.add(Transition(2,3,"WALK","egress",walk_time_s=4,distance_m=4))
+    net.stop_nodes={10:1,20:2}; net.node_stops={1:[10],2:[20]}
+    net.finalize()
+    q=Query((12.9,77.5),(12.90003,77.50003),0,("T","C","X","W"),timeout_s=5)
+    result=McRaptorRouter(net).route(q)
+    assert result.stats["exact"] and result.stats["rounds"]==1
+    journey=result.journeys[0]
+    assert [leg.mode for leg in journey.legs]==["WALK","BUS","WALK"]
+    assert journey.vector["T"]==24
+    assert journey.vector["W"]==9
+
+
+def test_a2_relaxes_transfer_footpaths_and_matches_a1():
+    net=PreparedNetwork({0:(12.9,77.5),1:(12.90001,77.50001),
+                         2:(12.90002,77.50002),3:(12.90003,77.50003)},
+                        boarding_buffer_s=0,fare_per_boarding={"BUS":0},coordinates_are_wgs84=True)
+    net.add(Transition(0,1,"BUS","A:0>1",trip_id="A",pattern_id="A",
+                       departure_time=0,arrival_time=10))
+    footpath=Transition(1,2,"WALK","footpath:1>2",walk_time_s=5,distance_m=5,
+                        segment_ids=("walk-a","walk-b"))
+    net.add(footpath); net.add_footpath(footpath)
+    net.add(Transition(2,3,"BUS","B:2>3",trip_id="B",pattern_id="B",
+                       departure_time=20,arrival_time=30))
+    net.stop_nodes={10:0,11:1,12:2,13:3}; net.node_stops={0:[10],1:[11],2:[12],3:[13]}
+    net.finalize()
+    q=Query((12.9,77.5),(12.90003,77.50003),0,("T","C","X","W"),timeout_s=5)
+    a2=McRaptorRouter(net).route(q)
+    a1=LabelSettingRouter(net).route(q)
+    assert a2.stats["exact"] and a2.stats["rounds"]==2
+    assert a2.journeys[0].vector["X"]==1
+    assert a2.journeys[0].vector["T"]==30
+    assert a2.journeys[0].legs[1].segment_ids==["walk-a","walk-b"]
+    assert {(j.vector["T"],j.vector["X"],j.vector["W"]) for j in a2.journeys}=={
+        (j.vector["T"],j.vector["X"],j.vector["W"]) for j in a1.journeys}
+    limited=McRaptorRouter(net).route(Query(q.origin,q.destination,0,q.objectives,
+                                           max_transfers=0,timeout_s=5))
+    assert limited.stats["exact"] and limited.journeys==[]
+
+
+def test_a2_adds_walking_only_journey():
+    net=PreparedNetwork({0:(12.9,77.5),1:(12.90001,77.50001)},coordinates_are_wgs84=True)
+    net.add(Transition(0,1,"WALK","walk",walk_time_s=5,distance_m=5))
+    net.finalize()
+    q=Query((12.9,77.5),(12.90001,77.50001),0,("T","W"),timeout_s=5)
+    result=McRaptorRouter(net).route(q)
+    assert result.stats["exact"]
+    assert len(result.journeys)==1
+    assert result.journeys[0].legs[0].segment_ids==["walk"]
+
+
 def test_b0_selects_the_correct_weighted_sum_extremes():
     net=unsupported_toy_network()
     router=WeightedAStarRouter(net,scales={"T":1,"C":1})
