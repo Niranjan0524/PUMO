@@ -55,8 +55,11 @@ class PreparedNetwork:
         self.transit: dict[int, list[Transition]] = defaultdict(list)
         self.stop_nodes: dict[int, int] = {}
         self.node_stops: dict[int, list[int]] = defaultdict(list)
+        self._metric_transformer = (Transformer.from_crs("EPSG:4326", "EPSG:32643", always_xy=True)
+                                     if coordinates_are_wgs84 else None)
         self._tree = None
         self._node_order = None
+        self._distance_bound_scale = None
         for edge in edges:
             self.add(edge)
 
@@ -85,6 +88,34 @@ class PreparedNetwork:
         xy = transformer.transform(lon, lat)
         _, i = self._tree.query(xy)
         return int(self._node_order[int(i)])
+
+    def straight_line_distance_m(self, node_a: int, node_b: int) -> float:
+        """Metric Euclidean lower-bound distance between graph nodes."""
+        a = self.coords[int(node_a)]
+        b = self.coords[int(node_b)]
+        if self._metric_transformer is not None:
+            ax, ay = self._metric_transformer.transform(a[1], a[0])
+            bx, by = self._metric_transformer.transform(b[1], b[0])
+            a, b = (ax, ay), (bx, by)
+        return hypot(float(a[0]) - float(b[0]), float(a[1]) - float(b[1]))
+
+    def straight_line_lower_bound_m(self, node_a: int, node_b: int) -> float:
+        """Conservative geometric lower bound compatible with edge distances.
+
+        Feed stop snapping and rounded source distances can make an edge's
+        recorded length slightly shorter than the chord between its graph
+        endpoints. A global ratio keeps the straight-line bound admissible.
+        """
+        if self._distance_bound_scale is None:
+            ratio = 1.0
+            for adjacency in (self.walk, self.transit):
+                for source, edges in adjacency.items():
+                    for edge in edges:
+                        chord = self.straight_line_distance_m(source, edge.to_node)
+                        if chord > 1e-9:
+                            ratio = min(ratio, max(0.0, float(edge.distance_m)) / chord)
+            self._distance_bound_scale = min(1.0, ratio)
+        return self.straight_line_distance_m(node_a, node_b) * self._distance_bound_scale
 
     def transitions_from(self, node: int, current_time: int, on_trip: str | None,
                         *, boarding_buffer_s: int | None = None, disruptions=()):

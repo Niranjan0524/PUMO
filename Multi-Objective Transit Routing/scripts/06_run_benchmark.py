@@ -64,21 +64,23 @@ def main():
             warm_q=Query(q.origin,q.destination,q.departure_time,("T","C"),timeout_s=min(5.0,q.timeout_s))
             if algorithm=="A1": LabelSettingRouter(net,label_cap=min(cap,10000)).route(warm_q)
             elif algorithm=="A2": McRaptorRouter(net,label_cap=min(cap,10000)).route(warm_q)
-            elif algorithm=="W": WeightSweepRouter(net,scales=scales,sweep_size=2,seed=int(cfg["seed"]),profiles=[],label_cap=min(cap,10000)).route(warm_q)
-            else: WeightedAStarRouter(net,scales=scales,label_cap=min(cap,10000)).route(Query(q.origin,q.destination,q.departure_time,("T","C"),{"T":1,"C":0},timeout_s=min(5.0,q.timeout_s)))
+            elif algorithm=="W": WeightSweepRouter(net,scales=scales,sweep_size=2,seed=int(cfg["seed"]),profiles=[],label_cap=min(cap,10000),max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(warm_q)
+            else: WeightedAStarRouter(net,scales=scales,label_cap=min(cap,10000),max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(Query(q.origin,q.destination,q.departure_time,("T","C"),{"T":1,"C":0},timeout_s=min(5.0,q.timeout_s)))
             warmed.add(algorithm)
           for rep in range(nrep):
             tracemalloc.start(); start=time.perf_counter()
             if algorithm=="A1": result=LabelSettingRouter(net,label_cap=cap).route(q)
             elif algorithm=="A2": result=McRaptorRouter(net,label_cap=cap).route(q)
             elif algorithm=="W": result=WeightSweepRouter(net,scales=scales,sweep_size=int(cfg["sweep_size"]),
-                    seed=int(cfg["seed"]),profiles=profiles,label_cap=cap).route(q)
+                    seed=int(cfg["seed"]),profiles=profiles,label_cap=cap,
+                    max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(q)
             else:
               candidates=[]; bstats=[]
               for profile in profiles:
                 qb=Query(q.origin,q.destination,q.departure_time,q.objectives,profile,q.disruptions,
                          q.start_state,q.max_transfers,q.timeout_s)
-                br=WeightedAStarRouter(net,scales=scales,label_cap=cap).route(qb)
+                br=WeightedAStarRouter(net,scales=scales,label_cap=cap,
+                    max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(qb)
                 candidates.extend(br.journeys); bstats.append(br.stats)
               from pumo.model import RouteResult
               result=RouteResult(candidates,{"runtime_s":sum(s.get("runtime_s",0) for s in bstats),

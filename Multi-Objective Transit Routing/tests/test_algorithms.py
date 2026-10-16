@@ -6,6 +6,7 @@ from pumo.algos.weighted_astar import time_lower_bound
 from pumo.model import Disruption, JourneyState, Query
 from pumo.network import PreparedNetwork, Transition
 from pumo.algos.base import edge_arrival
+from pumo.objectives import OBJECTIVES
 
 
 def unsupported_toy_network():
@@ -73,6 +74,31 @@ def test_b0_selects_the_correct_weighted_sum_extremes():
     assert cheap.journeys[0].vector["C"]==1
 
 
+def test_b0_keeps_early_expensive_labels_that_can_catch_a_service():
+    net=PreparedNetwork({0:(12.9,77.5),1:(12.90001,77.50001),2:(12.90002,77.50002)},
+                        boarding_buffer_s=0,coordinates_are_wgs84=True)
+    # The earlier walk costs more W but catches the only useful bus. A single
+    # lowest-score label at node 1 would discard it and return W=21 instead.
+    net.add(Transition(0,1,"WALK","fast",walk_time_s=1,distance_m=10))
+    net.add(Transition(0,1,"WALK","cheap",walk_time_s=5,distance_m=1))
+    net.add(Transition(1,2,"BUS","bus",trip_id="bus",pattern_id="bus",
+                       departure_time=2,arrival_time=3))
+    net.add(Transition(1,2,"WALK","detour",walk_time_s=100,distance_m=20))
+    net.finalize()
+    q=Query((12.9,77.5),(12.90002,77.50002),0,("W",),{"W":1},timeout_s=5)
+    result=WeightedAStarRouter(net,scales={"W":1}).route(q)
+    assert result.stats["exact"]
+    assert result.journeys[0].vector["W"]==10
+    assert result.journeys[0].legs[0].segment_ids==["fast"]
+
+
+def test_b0_preserves_a_discovered_target_when_label_cap_hits():
+    result=WeightedAStarRouter(unsupported_toy_network(),scales={"T":1,"C":1},
+                               label_cap=1).route(query({"T":1,"C":0}))
+    assert result.stats["label_cap_hit"] and not result.stats["exact"]
+    assert len(result.journeys)==1 and result.journeys[0].vector["T"]==1
+
+
 def test_weight_sweep_is_nondominated_and_misses_unsupported_point():
     net=unsupported_toy_network()
     router=WeightSweepRouter(net,scales={"T":1,"C":1},sweep_size=30,seed=7,profiles=[])
@@ -85,6 +111,30 @@ def test_weight_sweep_is_nondominated_and_misses_unsupported_point():
             if a is not b:
                 assert not (a.vector["T"]<=b.vector["T"] and a.vector["C"]<=b.vector["C"] and
                            (a.vector["T"]<b.vector["T"] or a.vector["C"]<b.vector["C"]))
+    assert result.stats["weight_vectors_run"]==30
+    assert len(result.stats["per_weight_runtime_s"])==30
+    assert result.stats["supported_front_only"]
+
+
+def test_weight_sweep_seeded_vectors_and_runtime_stats_are_reproducible():
+    net=unsupported_toy_network()
+    first=WeightSweepRouter(net,scales={"T":1,"C":1},sweep_size=12,seed=91,profiles=[]).route(query())
+    second=WeightSweepRouter(net,scales={"T":1,"C":1},sweep_size=12,seed=91,profiles=[]).route(query())
+    assert first.stats["weight_vectors"]==second.stats["weight_vectors"]
+    assert first.stats["weight_vectors_run"]==12
+    assert len(first.stats["per_weight_runtime_s"])==12
+    assert first.stats["distinct_journeys"]>=len(first.journeys)
+
+
+def test_weight_sweep_contains_units_profiles_and_seeded_simplex_samples():
+    router=WeightSweepRouter(scales={key:1 for key in OBJECTIVES},sweep_size=50,seed=13)
+    vectors=router.weight_vectors(OBJECTIVES)
+    assert len(vectors)==50
+    assert [tuple(v[key] for key in OBJECTIVES) for v in vectors[:6]]==[
+        tuple(float(key==name) for key in OBJECTIVES) for name in OBJECTIVES]
+    assert all(abs(sum(vector.values())-1.0)<1e-12 for vector in vectors[6:])
+    again=WeightSweepRouter(scales={key:1 for key in OBJECTIVES},sweep_size=50,seed=13).weight_vectors(OBJECTIVES)
+    assert vectors==again
 
 
 def test_disruption_overlay_closes_edges_and_shifts_transit_trip():
@@ -131,7 +181,11 @@ def test_b0_heuristic_does_not_overestimate_toy_remaining_time():
     speed=max((e.distance_m/(e.arrival_time-e.departure_time)) for edges in net.transit.values() for e in edges)
     estimate=time_lower_bound(net,0,3,{"T":1},{"T":1},speed,("T",))
     exact=min(e.arrival_time-e.departure_time for e in net.transit[0])
+    assert abs(net.straight_line_distance_m(0,3)-4.6)<0.2
     assert estimate<=exact+1e-9
+    disabled=WeightedAStarRouter(net,scales={"T":1},max_speed_cap_mps=1.0).route(
+        Query((12.9,77.5),(12.90003,77.50003),0,("T",),{"T":1},timeout_s=5))
+    assert disabled.stats["exact"] and not disabled.stats["heuristic_enabled"]
 
 
 def test_dropping_objective_keeps_fastest_arrival():
@@ -164,8 +218,9 @@ def test_seeded_tiny_networks_match_exhaustive_oracle():
         weights={"T":float(rng.random()),"C":float(rng.random())}
         scales={"T":1.0,"C":1.0}
         score=lambda pair:weights["T"]*pair[0]+weights["C"]*pair[1]
-        optimum=min(alternatives,key=score)
+        optimum=min(score(pair) for pair in alternatives)
         b0=WeightedAStarRouter(net,scales=scales).route(Query(q.origin,q.destination,0,q.objectives,weights,timeout_s=5))
-        assert (b0.journeys[0].vector["T"],b0.journeys[0].vector["C"])==optimum
+        assert b0.stats["exact"]
+        assert abs(b0.stats["weighted_score"]-optimum)<1e-9
         w=WeightSweepRouter(net,scales=scales,sweep_size=20,seed=seed,profiles=[]).route(q)
         assert {(j.vector["T"],j.vector["C"]) for j in w.journeys} <= set(oracle)

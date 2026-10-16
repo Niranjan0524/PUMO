@@ -25,7 +25,8 @@ rows=[]
 for i,qrow in enumerate(queries.itertuples(index=False)):
     query=Query((float(qrow.origin_lat),float(qrow.origin_lon)),(float(qrow.destination_lat),float(qrow.destination_lon)),
         int(qrow.departure_time),("T","C","X","W","E","S"),balanced,timeout_s=float(cfg["timeout_s"]))
-    baseline=WeightedAStarRouter(net,scales=scales,label_cap=int(cfg["label_cap"])).route(query)
+    baseline=WeightedAStarRouter(net,scales=scales,label_cap=int(cfg["label_cap"]),
+        max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(query)
     if not baseline.journeys: continue
     rng_seed=int(cfg["seed"])+i
     activation=query.departure_time+int(pd.Series([900,1200,1500]).sample(n=1,random_state=rng_seed).iloc[0])
@@ -39,8 +40,10 @@ for i,qrow in enumerate(queries.itertuples(index=False)):
         start=time.perf_counter()
         if name=="A1": result=LabelSettingRouter(net,label_cap=int(cfg["label_cap"])).route(reroute_q)
         elif name=="A2": result=McRaptorRouter(net,label_cap=int(cfg["label_cap"])).route(reroute_q)
-        elif name=="W": result=WeightSweepRouter(net,scales=scales,sweep_size=int(cfg["sweep_size"]),seed=rng_seed).route(reroute_q)
-        else: result=WeightedAStarRouter(net,scales=scales,label_cap=int(cfg["label_cap"])).route(reroute_q)
+        elif name=="W": result=WeightSweepRouter(net,scales=scales,sweep_size=int(cfg["sweep_size"]),seed=rng_seed,
+            max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(reroute_q)
+        else: result=WeightedAStarRouter(net,scales=scales,label_cap=int(cfg["label_cap"]),
+            max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0))).route(reroute_q)
         durations[name]=time.perf_counter()-start; outputs[name]=result.journeys; stats[name]=result.stats
     if stats.get("A1",{}).get("exact"): reference=outputs["A1"]; ref_type="EXACT_A1_POST_DISRUPTION"
     else:

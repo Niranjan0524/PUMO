@@ -23,6 +23,9 @@ def objective_vector(values: Mapping[str, float], objectives: Iterable[str] = OB
 def sum_leg_vectors(legs, objectives: Iterable[str] = OBJECTIVES) -> dict[str, float]:
     """Recompute objective totals from per-leg contributions, including wait time."""
     result = {name: 0.0 for name in objectives}
+    # T is always retained because validators and callers need elapsed time,
+    # even when the requested Pareto projection omits it.
+    result.setdefault("T", 0.0)
     legs = list(legs)
     for leg in legs:
         for name in result:

@@ -10,4 +10,6 @@
 | 2026-10-16 | Use road class and nearby flood points as the available edge safety components. | No geolocated accident or streetlight records were found in the available files. The score is a proxy, not a safety measurement. |
 | 2026-10-16 | Calculate walking edge lengths after projecting to EPSG:32643. | Distances in degrees are invalid for metric routing costs. |
 | 2026-10-16 | Use the task-specified relative emission factors and placeholder fare model until GTFS fares are verified as consistent. | Absolute costs/emissions must not be presented as observed values. |
+| 2026-10-16 | B0 retains the non-dominated (arrival, scalar score) labels per vehicle state. | Earlier arrival can catch a better timetable connection, so a single lowest-score label can discard the weighted optimum. |
+| 2026-10-16 | Disable B0's time heuristic when observed edge speed exceeds the configured 40 m/s bound; adjust the metric chord by the minimum edge-length/chord ratio. | A lower speed or an unadjusted chord can overestimate remaining travel time when feed distance and snapped graph endpoints differ. A zero heuristic preserves correctness. |
 

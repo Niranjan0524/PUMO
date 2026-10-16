@@ -1,6 +1,7 @@
 seed: 20261016
 service_date: null
 walk_speed_mps: 1.33
+max_speed_cap_mps: 40.0
 footpath_options: 3
 access_radius_m: 600
 transfer_radius_m: 400

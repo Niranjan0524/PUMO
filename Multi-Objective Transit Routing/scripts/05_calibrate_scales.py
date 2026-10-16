@@ -19,7 +19,8 @@ queries=pd.read_parquet(qpath)
 if args.query_limit: queries=queries.head(args.query_limit)
 net=PreparedNetwork.from_directory(p,scenario="core",radius_km=cfg["scenarios"]["core_radius_km"],
                                    boarding_buffer_s=30)
-router=WeightedAStarRouter(net,scales={k:1.0 for k in OBJECTIVES})
+router=WeightedAStarRouter(net,scales={k:1.0 for k in OBJECTIVES},
+                          max_speed_cap_mps=float(cfg.get("max_speed_cap_mps",40.0)))
 observed={k:[] for k in OBJECTIVES}; failures=0
 for row in queries.itertuples(index=False):
     q=Query((float(row.origin_lat),float(row.origin_lon)),(float(row.destination_lat),float(row.destination_lon)),
