@@ -1,0 +1,40 @@
+PUMO SAFETY DATA QUALITY REPORT
+========================================
+Total road edges: 394508
+Unique edge IDs: 394508
+Duplicate edge IDs: 0
+Unique (u, v, key) combinations: 394508
+Duplicate road keys: 0
+Missing values:
+u                             0
+v                             0
+key                           0
+edge_id                       0
+streetlight_count             0
+streetlight_data_available    0
+nearby_flood_locations        0
+flood_data_available          0
+
+Streetlight coverage
+Edges with matched streetlights: 79929
+Edges with zero matched streetlights: 314579
+Matched streetlight count total: 189395
+
+Flood-location coverage
+Edges near recorded flood locations: 158
+Total matched flood-location counts: 164
+
+Attribute summary
+       streetlight_count  nearby_flood_locations
+count      394508.000000           394508.000000
+mean            0.480079                0.000416
+std             1.458290                0.021237
+min             0.000000                0.000000
+25%             0.000000                0.000000
+50%             0.000000                0.000000
+75%             0.000000                0.000000
+max            80.000000                3.000000
+
+Consistency checks
+Streetlight flag inconsistencies: 0
+Flood flag inconsistencies: 0
