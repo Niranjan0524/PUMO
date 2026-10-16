@@ -8,7 +8,7 @@ All four algorithms use the same prepared network and objective definitions: A1 
 
 ## Results
 
-No Pareto-set method passed both the exact-Core and optimistic-Mid six-objective quality gates. Highest observed median hypervolume ratio across available gate references: **W**. No winner is declared.
+The Core quality gate is unavailable: none of the 21 sampled six-objective Core queries produced an exact A1 reference. W had the highest median hypervolume ratio on the available optimistic Mid reference (0.982), but no overall winner is declared.
 
 Pilot settings: protocol v1.5; one seeded query per populated stratum plus metro sanity queries; one repetition; 5-second per-algorithm budget; 10,000-label cap. Objective tiers: TC and TCXWES. The comparison is exploratory; timeout/cap failure rates are high and all such results remain marked inexact.
 
@@ -56,10 +56,11 @@ The sweep experiment used three seeded City queries (short, medium, long) and th
 
 ## Limitations
 
-- These results describe this Bengaluru snapshot, query sample and implementation, not algorithms in general. Core exact-reference gate rows cover 0 queries; Mid optimistic-reference rows cover 29 queries.
+- These results describe this Bengaluru snapshot, query sample and implementation, not algorithms in general. Core exact-reference gate rows cover 0 queries; Mid optimistic-reference rows cover 29 queries. The 10 ms RSS sampler can miss short-lived memory peaks.
 - Walking time and road-class risk are modeled. The metro feed may have approximate intermediate times.
 - Aggregate accident totals and ward-level streetlight counts were not assigned to edges. Flood points and modeled road class are the available safety inputs; the composite is a proxy, not a safety measurement.
 - Fare and emission values are placeholder/relative units, not observed rupee or CO2 values.
 - W only finds supported Pareto points. Mid/City references are unions of compared outputs and are optimistic.
 - A1 is restricted to Core and any cap/timeout result is not an exact reference.
 - Empty strata and failures are listed in the query-cell manifest and raw results.
+- Disruption handling and rerouting were excluded as future work; no disruption scenarios were run.

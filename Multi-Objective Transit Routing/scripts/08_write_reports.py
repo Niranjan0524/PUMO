@@ -66,6 +66,8 @@ if "distance_band" in raw:
 def table(frame): return frame.to_markdown(index=True,floatfmt=".3f") if len(frame) else "No qualifying rows were produced."
 if winner:
     decision=f"**{winner}** is the registered winner with Mid+City six-objective p95 runtime {runtime[winner]:.3f} s."
+elif not len(exact):
+    decision=f"The Core quality gate is unavailable: none of the {raw[(raw.scenario=='core')&(raw.objective_set=='TCXWES')].query_id.nunique()} sampled six-objective Core queries produced an exact A1 reference. W had the highest median hypervolume ratio on the available optimistic Mid reference ({mid_quality.loc['W','hv_median']:.3f}), but no overall winner is declared."
 else:
     decision=f"No Pareto-set method passed both the exact-Core and optimistic-Mid six-objective quality gates. Highest observed median hypervolume ratio across available gate references: **{best_observed}**. No winner is declared."
 core_txt=table(core_quality); mid_txt=table(mid_quality)
@@ -121,13 +123,14 @@ The sweep experiment used three seeded City queries (short, medium, long) and th
 
 ## Limitations
 
-- These results describe this Bengaluru snapshot, query sample and implementation, not algorithms in general. Core exact-reference gate rows cover {exact.query_id.nunique()} queries; Mid optimistic-reference rows cover {mid.query_id.nunique()} queries.
+- These results describe this Bengaluru snapshot, query sample and implementation, not algorithms in general. Core exact-reference gate rows cover {exact.query_id.nunique()} queries; Mid optimistic-reference rows cover {mid.query_id.nunique()} queries. The 10 ms RSS sampler can miss short-lived memory peaks.
 - Walking time and road-class risk are modeled. The metro feed may have approximate intermediate times.
 - Aggregate accident totals and ward-level streetlight counts were not assigned to edges. Flood points and modeled road class are the available safety inputs; the composite is a proxy, not a safety measurement.
 - Fare and emission values are placeholder/relative units, not observed rupee or CO2 values.
 - W only finds supported Pareto points. Mid/City references are unions of compared outputs and are optimistic.
 - A1 is restricted to Core and any cap/timeout result is not an exact reference.
 - Empty strata and failures are listed in the query-cell manifest and raw results.
+- Disruption handling and rerouting were excluded as future work; no disruption scenarios were run.
 '''
 (ROOT/"reports").mkdir(exist_ok=True)
 (ROOT/"reports"/"ALGO_COMPARISON.md").write_text(report,encoding="utf-8")
@@ -136,9 +139,9 @@ slide=f'''# PUMO routing algorithms — slide summary
 - **Question:** which Pareto-set method best fits this Bengaluru multimodal dataset under the registered quality and runtime rule?
 - **Compared:** B0 weighted-sum A*, W weight-sweep, A2 McRAPTOR-style rounds, and Core-only exact A1.
 - **Measured:** runtime and memory, labels, Pareto recall, hypervolume, linear and Chebyshev regret, failures, and objective scaling.
-- **Decision:** {winner if winner else 'No method passed both registered quality gates; no winner declared.'} {f'It had Mid+City six-objective p95 runtime {runtime[winner]:.3f} s.' if winner else ''}
+- **Decision:** {winner if winner else ('Core gate unavailable because A1 produced no exact six-objective references; no winner declared.' if not len(exact) else 'No method passed both registered quality gates; no winner declared.')} {f'It had Mid+City six-objective p95 runtime {runtime[winner]:.3f} s.' if winner else ''}
 - **Interpretation:** All four methods reached timeout or label caps frequently in the pilot; report quality and runtime together. W samples supported fronts only; A1 supplies exact Core references only on uncapped queries.
 - **Caveats:** metro times can be approximate; fares/emissions are placeholders; safety is a proxy based on available layers; Mid/City reference sets are optimistic.
 '''
-(ROOT/"reports"/"SLIDE_SUMMARY.md").write_text(slide,encoding="utf-8")
+(ROOT/"reports"/"SLIDE_SUMMARY.md").write_text("\n".join(line.rstrip() for line in slide.splitlines()) + "\n",encoding="utf-8")
 print("Wrote reports/ALGO_COMPARISON.md and reports/SLIDE_SUMMARY.md")
