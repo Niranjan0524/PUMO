@@ -24,6 +24,28 @@ def dominates(a: Sequence[float], b: Sequence[float], *, eps: float = 0.0) -> bo
     return all(x <= y + eps for x, y in zip(av, bv)) and any(x < y - eps for x, y in zip(av, bv))
 
 
+def time_aware_dominates(arrival_a: float, values_a, arrival_b: float, values_b,
+                         objectives: Sequence[str], *, eps: float = 0.0) -> bool:
+    """Label dominance, including earlier arrival for future feasibility.
+
+    Arrival time is always part of an internal routing label, even when T is
+    omitted from the requested output objectives. When T is selected, it is not
+    duplicated in the comparison vector.
+    """
+    keys = tuple(key for key in objectives if key != "T")
+    return dominates((float(arrival_a), *(float(values_a.get(k, 0.0)) for k in keys)),
+                     (float(arrival_b), *(float(values_b.get(k, 0.0)) for k in keys)), eps=eps)
+
+
+def time_aware_equivalent(arrival_a: float, values_a, arrival_b: float, values_b,
+                          objectives: Sequence[str], *, eps: float = 0.0) -> bool:
+    """Whether labels have equal arrival and equal selected non-time costs."""
+    keys = tuple(key for key in objectives if key != "T")
+    a = (float(arrival_a), *(float(values_a.get(k, 0.0)) for k in keys))
+    b = (float(arrival_b), *(float(values_b.get(k, 0.0)) for k in keys))
+    return len(a) == len(b) and all(abs(x - y) <= eps for x, y in zip(a, b))
+
+
 def pareto_indices(vectors: Sequence[Sequence[float]], *, eps: float = 0.0) -> list[int]:
     """Indices of the first occurrence of each unique non-dominated vector."""
     if eps < 0:

@@ -10,6 +10,7 @@ import argparse
 import csv
 import json
 import os
+import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
@@ -27,9 +28,10 @@ from scipy.spatial import cKDTree
 from shapely.geometry import Point, box
 from pyrosm import OSM
 import yaml
-from pumo.timetable import gtfs_time_seconds
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from pumo.timetable import gtfs_time_seconds
 RAW = ROOT / "Data"
 OUT = ROOT / "derived_data" / "processed"
 METRIC_CRS = "EPSG:32643"

@@ -33,6 +33,37 @@ def test_a1_and_a2_reproduce_hand_computed_pareto_set():
         assert {(j.vector["T"],j.vector["C"]) for j in result.journeys}==expected
 
 
+def test_a1_partial_result_flags_label_cap_and_keeps_discovered_target():
+    result=LabelSettingRouter(unsupported_toy_network(),label_cap=1).route(query())
+    assert result.stats["label_cap_hit"] and not result.stats["exact"]
+    assert len(result.journeys)==1
+    assert result.journeys[0].vector["T"]==1
+
+
+def test_a1_counts_trip_changes_as_transfers_and_respects_limit():
+    net=PreparedNetwork({0:(12.9,77.5),1:(12.90001,77.50001),2:(12.90002,77.50002)},
+                        boarding_buffer_s=0, fare_per_boarding={"BUS":0}, coordinates_are_wgs84=True)
+    net.add(Transition(0,1,"BUS","A:0>1",trip_id="A",pattern_id="A",departure_time=0,arrival_time=10))
+    net.add(Transition(1,2,"BUS","B:1>2",trip_id="B",pattern_id="B",departure_time=20,arrival_time=30))
+    net.finalize()
+    q=Query((12.9,77.5),(12.90002,77.50002),0,("T","X"),timeout_s=5)
+    result=LabelSettingRouter(net).route(q)
+    assert result.stats["exact"]
+    journey=result.journeys[0]
+    assert journey.vector["X"]==1
+    assert journey.vector["T"]==30  # includes the 10-second transfer wait
+    assert [leg.dep_time for leg in journey.legs]==[0,20]
+    limited=LabelSettingRouter(net).route(Query(q.origin,q.destination,0,("T","X"),
+                                                max_transfers=0,timeout_s=5))
+    assert limited.stats["exact"] and limited.journeys==[]
+
+
+def test_a1_timeout_is_reported_as_inexact():
+    q=Query((12.9,77.5),(12.90003,77.50003),0,("T","C"),timeout_s=1e-12)
+    result=LabelSettingRouter(unsupported_toy_network()).route(q)
+    assert result.stats["timed_out"] and not result.stats["exact"]
+
+
 def test_b0_selects_the_correct_weighted_sum_extremes():
     net=unsupported_toy_network()
     router=WeightedAStarRouter(net,scales={"T":1,"C":1})

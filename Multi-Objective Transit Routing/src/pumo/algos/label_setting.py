@@ -4,9 +4,10 @@ from dataclasses import dataclass
 import heapq
 import time
 
-from pumo.model import Journey, Query, RouteResult
+from pumo.model import Journey, Query, RouteResult, validate_result
 from pumo.objectives import OBJECTIVES
-from pumo.pareto import dominates
+from pumo.pareto import (pareto_filter, time_aware_dominates,
+                          time_aware_equivalent)
 from .base import Router, edge_arrival, make_legs, query_start, step_values
 
 
@@ -45,11 +46,11 @@ class LabelSettingRouter(Router):
             _, index = heapq.heappop(queue)
             label = labels[index]
             if not label.alive: continue
+            if any(_dominates_label(labels[g], label, q.objectives) for g in goals if labels[g].alive):
+                continue
             expanded += 1
             if label.node == target:
-                if not any(_dominates_or_equal_label(labels[g], label, q.objectives) for g in goals if labels[g].alive):
-                    goals = [g for g in goals if labels[g].alive and not _dominates_label(label, labels[g], q.objectives)]
-                    goals.append(index)
+                _add_goal(goals, labels, index, q.objectives)
                 continue
             for edge in net.transitions_from(label.node, label.arrival, label.on_trip, disruptions=q.disruptions):
                 arrival = edge_arrival(edge, label.arrival, on_trip=label.on_trip)
@@ -64,6 +65,16 @@ class LabelSettingRouter(Router):
                     pass
                 key = (edge.to_node, last_trip, trip)
                 proposed = _Label(edge.to_node, arrival, values, last_trip, trip, index, edge)
+                if any(_dominates_label(labels[g], proposed, q.objectives) for g in goals if labels[g].alive):
+                    continue
+                if edge.to_node == target:
+                    idx = len(labels)
+                    labels.append(proposed)
+                    generated += 1
+                    _add_goal(goals, labels, idx, q.objectives)
+                    if generated >= self.label_cap:
+                        cap_hit = True; break
+                    continue
                 if any(_dominates_or_equal_label(labels[j], proposed, q.objectives)
                        for j in bags.get(key, ()) if labels[j].alive):
                     continue
@@ -78,6 +89,11 @@ class LabelSettingRouter(Router):
                     cap_hit = True; break
                 heapq.heappush(queue, (arrival, idx))
             if cap_hit: break
+        # A cap or timeout can stop with an undispatched target label in the
+        # queue. Include every target label already discovered in the partial
+        # result, then apply the same shared Pareto filter as completed runs.
+        goals = list(dict.fromkeys(goals + [i for i, label in enumerate(labels)
+                                            if label.alive and label.node == target]))
         journeys = []
         for goal in goals:
             transitions=[]; cursor=goal
@@ -92,17 +108,29 @@ class LabelSettingRouter(Router):
             legs=make_legs(transitions, departure)
             totals=dict(labels[goal].values); totals["T"]=labels[goal].arrival-departure
             journeys.append(Journey(legs, totals))
-        return RouteResult(journeys, {"runtime_s": time.perf_counter()-started,
+        journeys = pareto_filter(journeys, lambda j: tuple(j.vector.get(k, 0.0) for k in q.objectives),
+                                 eps=1e-12)
+        result = RouteResult(journeys, {"runtime_s": time.perf_counter()-started,
             "labels_generated": generated, "labels_expanded": expanded, "timed_out": timed_out,
-            "label_cap_hit": cap_hit, "exact": not timed_out and not cap_hit})
+            "label_cap_hit": cap_hit, "exact": not timed_out and not cap_hit,
+            "notes": ["partial Pareto set" if timed_out or cap_hit else "exact Pareto set"]})
+        validate_result(result, objectives=q.objectives, pareto=True)
+        return result
 
 
-def _select(values, names): return tuple(float(values.get(name,0.0)) for name in names)
-def _equal(a,b,names): return all(abs(float(a.get(n,0))-float(b.get(n,0))) <= 1e-12 for n in names)
-def _dominates_or_equal(a,b): return a == b or dominates(a,b)
 def _dominates_label(a, b, names):
-    av, bv = _select(a.values, names), _select(b.values, names)
-    if a.arrival > b.arrival or any(x > y + 1e-12 for x,y in zip(av,bv)): return False
-    return a.arrival < b.arrival or any(x < y - 1e-12 for x,y in zip(av,bv))
+    return time_aware_dominates(a.arrival, a.values, b.arrival, b.values, names, eps=1e-12)
 def _dominates_or_equal_label(a, b, names):
-    return (a.arrival == b.arrival and _equal(a.values,b.values,names)) or _dominates_label(a,b,names)
+    return time_aware_equivalent(a.arrival, a.values, b.arrival, b.values, names, eps=1e-12) or _dominates_label(a,b,names)
+
+
+def _add_goal(goals, labels, index, objectives):
+    candidate = labels[index]
+    if any(_dominates_or_equal_label(labels[goal], candidate, objectives)
+           for goal in goals if labels[goal].alive):
+        candidate.alive = False
+        return
+    for goal in goals:
+        if labels[goal].alive and _dominates_label(candidate, labels[goal], objectives):
+            labels[goal].alive = False
+    goals.append(index)
