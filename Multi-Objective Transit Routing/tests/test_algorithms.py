@@ -1,0 +1,140 @@
+from pumo.algos.label_setting import LabelSettingRouter
+from pumo.algos.mcraptor import McRaptorRouter
+from pumo.algos.weight_sweep import WeightSweepRouter
+from pumo.algos.weighted_astar import WeightedAStarRouter
+from pumo.algos.weighted_astar import time_lower_bound
+from pumo.model import Disruption, JourneyState, Query
+from pumo.network import PreparedNetwork, Transition
+from pumo.algos.base import edge_arrival
+
+
+def unsupported_toy_network():
+    # Three direct services have (T,C) = (1,8), (4,6), (8,1).
+    # (4,6) is Pareto-optimal but unsupported by any non-negative weighted sum.
+    coords = {0: (12.90000,77.50000), 1:(12.90001,77.50001),
+              2:(12.90002,77.50002), 3:(12.90003,77.50003)}
+    net=PreparedNetwork(coords,boarding_buffer_s=0,fare_per_boarding={"BUS":0},coordinates_are_wgs84=True)
+    for i,(duration,cost) in enumerate(((1,8),(4,6),(8,1))):
+        net.add(Transition(0,3,"BUS",f"trip-{i}",distance_m=4.6,cost=cost,
+            trip_id=f"trip-{i}",pattern_id=i,departure_time=0,arrival_time=duration))
+    return net.finalize()
+
+
+def query(weights=None):
+    return Query((12.9,77.5),(12.90003,77.50003),0, ("T","C"), weights, timeout_s=5)
+
+
+def test_a1_and_a2_reproduce_hand_computed_pareto_set():
+    net=unsupported_toy_network()
+    expected={(1.0,8.0),(4.0,6.0),(8.0,1.0)}
+    for router in (LabelSettingRouter(net),McRaptorRouter(net)):
+        result=router.route(query())
+        assert result.stats["exact"]
+        assert {(j.vector["T"],j.vector["C"]) for j in result.journeys}==expected
+
+
+def test_b0_selects_the_correct_weighted_sum_extremes():
+    net=unsupported_toy_network()
+    router=WeightedAStarRouter(net,scales={"T":1,"C":1})
+    fast=router.route(query({"T":1,"C":0}))
+    cheap=router.route(query({"T":0,"C":1}))
+    assert fast.journeys[0].vector["T"]==1
+    assert cheap.journeys[0].vector["C"]==1
+
+
+def test_weight_sweep_is_nondominated_and_misses_unsupported_point():
+    net=unsupported_toy_network()
+    router=WeightSweepRouter(net,scales={"T":1,"C":1},sweep_size=30,seed=7,profiles=[])
+    result=router.route(query())
+    pairs={(j.vector["T"],j.vector["C"]) for j in result.journeys}
+    assert (4.0,6.0) not in pairs
+    assert (1.0,8.0) in pairs and (8.0,1.0) in pairs
+    for a in result.journeys:
+        for b in result.journeys:
+            if a is not b:
+                assert not (a.vector["T"]<=b.vector["T"] and a.vector["C"]<=b.vector["C"] and
+                           (a.vector["T"]<b.vector["T"] or a.vector["C"]<b.vector["C"]))
+
+
+def test_disruption_overlay_closes_edges_and_shifts_transit_trip():
+    net=unsupported_toy_network()
+    road=Transition(0,1,"WALK","1",walk_time_s=10,distance_m=10)
+    net.add(road)
+    closed=Disruption("d1","ROAD_CLOSURE",0,100,edge_ids=(1,),closure=True)
+    assert road not in list(net.transitions_from(0,0,None,disruptions=(closed,)))
+    trip=Transition(0,3,"BUS","trip-delay",trip_id="trip-delay",pattern_id="delay",
+                    departure_time=10,arrival_time=20)
+    net.add(trip)
+    delayed=Disruption("d2","BUS_DELAY",10,100,trip_ids=("trip-delay",),time_penalty_s=300)
+    shifted=[e for e in net.transitions_from(0,0,None,disruptions=(delayed,)) if e.trip_id=="trip-delay"]
+    assert len(shifted)==1
+    assert shifted[0].departure_time==310 and edge_arrival(shifted[0],0,on_trip=None)==320
+
+
+def test_reroute_starts_at_current_node_and_time():
+    net=unsupported_toy_network()
+    net.add(Transition(0,3,"BUS","later",trip_id="later",pattern_id="later",
+                       departure_time=60,arrival_time=70))
+    q=Query((12.9,77.5),(12.90003,77.50003),0,("T","C"),{"T":1,"C":0},
+            start_state=JourneyState("node:0",50),timeout_s=5)
+    result=WeightedAStarRouter(net,scales={"T":1,"C":1}).route(q)
+    assert result.journeys[0].legs[0].dep_time>=50
+    assert result.journeys[0].vector["T"]>=0
+
+
+def test_single_objective_agreement_and_seeded_determinism():
+    net=unsupported_toy_network()
+    q=Query((12.9,77.5),(12.90003,77.50003),0,("T",),timeout_s=5)
+    results=[LabelSettingRouter(net).route(q),McRaptorRouter(net).route(q),
+             WeightedAStarRouter(net,scales={"T":1}).route(Query(q.origin,q.destination,0,("T",),{"T":1},timeout_s=5)),
+             WeightSweepRouter(net,scales={"T":1},sweep_size=12,seed=123,profiles=[]).route(q)]
+    fastest=min(j.vector["T"] for j in results[0].journeys)
+    assert all(min(j.vector["T"] for j in r.journeys)==fastest for r in results)
+    w1=WeightSweepRouter(net,scales={"T":1},sweep_size=12,seed=123,profiles=[]).route(q)
+    w2=WeightSweepRouter(net,scales={"T":1},sweep_size=12,seed=123,profiles=[]).route(q)
+    assert [j.vector for j in w1.journeys]==[j.vector for j in w2.journeys]
+
+
+def test_b0_heuristic_does_not_overestimate_toy_remaining_time():
+    net=unsupported_toy_network()
+    speed=max((e.distance_m/(e.arrival_time-e.departure_time)) for edges in net.transit.values() for e in edges)
+    estimate=time_lower_bound(net,0,3,{"T":1},{"T":1},speed,("T",))
+    exact=min(e.arrival_time-e.departure_time for e in net.transit[0])
+    assert estimate<=exact+1e-9
+
+
+def test_dropping_objective_keeps_fastest_arrival():
+    net=unsupported_toy_network()
+    full=LabelSettingRouter(net).route(query())
+    time_only=LabelSettingRouter(net).route(Query(query().origin,query().destination,0,("T",),timeout_s=5))
+    assert min(j.vector["T"] for j in full.journeys)==min(j.vector["T"] for j in time_only.journeys)
+
+
+def test_seeded_tiny_networks_match_exhaustive_oracle():
+    import numpy as np
+    for seed in range(5):
+        rng=np.random.default_rng(seed); alternatives=[]
+        net=PreparedNetwork({0:(12.9,77.5),1:(12.90003,77.50003)},boarding_buffer_s=0,
+                            fare_per_boarding={"BUS":0},coordinates_are_wgs84=True)
+        for i in range(6):
+            duration=int(rng.integers(1,25)); cost=int(rng.integers(1,25))
+            alternatives.append((duration,cost))
+            net.add(Transition(0,1,"BUS",f"{seed}-{i}",distance_m=4.6,cost=cost,
+                trip_id=f"{seed}-{i}",pattern_id=i,departure_time=0,arrival_time=duration))
+        net.finalize()
+        oracle=[]
+        for candidate in alternatives:
+            if not any(a[0]<=candidate[0] and a[1]<=candidate[1] and a!=candidate for a in alternatives):
+                if candidate not in oracle: oracle.append(candidate)
+        q=Query((12.9,77.5),(12.90003,77.50003),0,("T","C"),timeout_s=5)
+        for router in (LabelSettingRouter(net),McRaptorRouter(net)):
+            actual={(j.vector["T"],j.vector["C"]) for j in router.route(q).journeys}
+            assert actual==set(oracle)
+        weights={"T":float(rng.random()),"C":float(rng.random())}
+        scales={"T":1.0,"C":1.0}
+        score=lambda pair:weights["T"]*pair[0]+weights["C"]*pair[1]
+        optimum=min(alternatives,key=score)
+        b0=WeightedAStarRouter(net,scales=scales).route(Query(q.origin,q.destination,0,q.objectives,weights,timeout_s=5))
+        assert (b0.journeys[0].vector["T"],b0.journeys[0].vector["C"])==optimum
+        w=WeightSweepRouter(net,scales=scales,sweep_size=20,seed=seed,profiles=[]).route(q)
+        assert {(j.vector["T"],j.vector["C"]) for j in w.journeys} <= set(oracle)

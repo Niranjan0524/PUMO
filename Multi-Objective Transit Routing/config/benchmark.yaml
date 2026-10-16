@@ -1,0 +1,26 @@
+seed: 20261016
+service_date: null
+walk_speed_mps: 1.33
+footpath_options: 3
+access_radius_m: 600
+transfer_radius_m: 400
+max_transfers: 4
+label_cap: 2000000
+timeout_s: 60
+sweep_size: 50
+repetitions: 3
+monte_carlo_samples: 100000
+scales:
+  T: 1714.25
+  C: 1.9
+  X: 1.0
+  W: 2022.3108107109283
+  E: 3.112559882041227
+  S: 547.00242987349
+scenarios:
+  core_radius_km: 3
+  mid_radius_km: 8
+comparison:
+  min_hypervolume_ratio: 0.95
+  max_chebyshev_regret: 0.05
+  runtime_tie_fraction: 0.1

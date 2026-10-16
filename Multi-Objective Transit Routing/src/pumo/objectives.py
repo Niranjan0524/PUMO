@@ -1,0 +1,56 @@
+"""Objective vector conventions and independent journey aggregation."""
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+
+OBJECTIVES = ("T", "C", "X", "W", "E", "S")
+
+
+def objective_vector(values: Mapping[str, float], objectives: Iterable[str] = OBJECTIVES) -> tuple[float, ...]:
+    names = tuple(objectives)
+    unknown = set(names) - set(OBJECTIVES)
+    if unknown:
+        raise ValueError(f"unknown objectives: {sorted(unknown)}")
+    return tuple(float(values.get(name, 0.0)) for name in names)
+
+
+def sum_leg_vectors(legs, objectives: Iterable[str] = OBJECTIVES) -> dict[str, float]:
+    """Recompute objective totals from per-leg contributions, including wait time."""
+    result = {name: 0.0 for name in objectives}
+    legs = list(legs)
+    for leg in legs:
+        for name in result:
+            if name != "T":
+                result[name] += float(leg.vector.get(name, 0.0))
+        result["T"] += float(leg.vector.get("T", 0.0))
+    return result
+
+
+def normalize(values: Mapping[str, float], scales: Mapping[str, float], objectives=OBJECTIVES) -> dict[str, float]:
+    output = {}
+    for name in objectives:
+        scale = float(scales[name])
+        if scale <= 0:
+            raise ValueError(f"scale for {name} must be positive")
+        output[name] = float(values.get(name, 0.0)) / scale
+    return output
+
+
+def weighted_score(values: Mapping[str, float], weights: Mapping[str, float],
+                   scales: Mapping[str, float], objectives=OBJECTIVES) -> float:
+    return sum(float(weights.get(k, 0.0)) * float(values.get(k, 0.0)) / float(scales[k])
+               for k in objectives)
+
+
+def profile_regret(candidates, reference, weights, scales, objectives=OBJECTIVES) -> float:
+    if not candidates or not reference:
+        return float("nan")
+    score = lambda v: weighted_score(v, weights, scales, objectives)
+    best_ref = min(map(score, reference))
+    best = min(map(score, candidates))
+    return (best - best_ref) / max(abs(best_ref), 1e-12)
+
+
+def chebyshev_score(values, weights, scales, objectives=OBJECTIVES) -> float:
+    return max((float(weights.get(k, 0.0)) * float(values.get(k, 0.0)) / float(scales[k])
+                for k in objectives), default=0.0)

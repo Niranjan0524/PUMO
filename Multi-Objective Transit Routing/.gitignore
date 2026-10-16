@@ -1,6 +1,13 @@
 # Large transit dataset
 ./Data/bmtc/shapes.txt
 
+# Keep large raw/intermediate and machine-generated outputs out of Git.
+/derived_data/
+/.venv/
+/__pycache__/
+/.pytest_cache/
+*.py[cod]
+
 # OpenStreetMap downloaded files
 *.osm
 *.osm.pbf

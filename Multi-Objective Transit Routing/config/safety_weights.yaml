@@ -1,0 +1,7 @@
+# Placeholder weights; not empirically calibrated.
+weights:
+  flood: 0.25
+  road: 0.25
+  lighting: 0.25
+  stop_wait: 0.25
+status: PLACEHOLDER_NOT_CALIBRATED

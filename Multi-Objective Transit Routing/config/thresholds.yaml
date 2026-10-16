@@ -1,0 +1,12 @@
+city_bbox: [77.35, 12.75, 77.85, 13.25]
+clip_buffer_km: 3.0
+metric_crs: EPSG:32643
+walk_speed_mps: 1.33
+stop_snap_max_m: 150
+transfer_radius_m: 400
+access_radius_m: 600
+walking_option_limit: 3
+max_footpath_time_s: 420
+boarding_buffer_s: 30
+flood_join_radius_m: 25
+accident_join_radius_m: 50

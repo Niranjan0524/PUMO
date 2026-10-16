@@ -1,0 +1,6 @@
+profile_id,time,cost,transfers,walking,emissions,safety
+time_focused,0.40,0.10,0.10,0.10,0.05,0.25
+budget_focused,0.10,0.40,0.10,0.10,0.05,0.25
+safety_focused,0.10,0.05,0.05,0.10,0.05,0.65
+eco_focused,0.15,0.10,0.05,0.10,0.50,0.10
+balanced,0.20,0.15,0.10,0.10,0.15,0.30

@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Create the comparison report, slide summary and requested figures from runs."""
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+ROOT=Path(__file__).resolve().parents[1]
+raw_path=ROOT/"results"/"raw_runs.csv"
+if not raw_path.exists(): raise SystemExit("No benchmark results found; complete the registered benchmark first")
+raw=pd.read_csv(raw_path)
+summary=pd.concat([pd.read_csv(p) for p in sorted((ROOT/"results").glob("summary_*.csv"))],ignore_index=True)
+exact=raw[(raw.scenario=="core")&(raw.objective_set=="TCXWES")&(raw.reference_type=="EXACT_A1")]
+core_quality=exact.groupby("algorithm").agg(hv_median=("hypervolume_ratio","median"),
+    cheb_mean=("chebyshev_regret","mean"),queries=("query_id","nunique")) if len(exact) else pd.DataFrame()
+eligible=[a for a in ("A2","W") if len(core_quality) and a in core_quality.index and
+    core_quality.loc[a,"hv_median"]>=.95 and core_quality.loc[a,"cheb_mean"]<=.05]
+mid=raw[(raw.scenario=="mid")&(raw.objective_set=="TCXWES")&(raw.reference_type=="BEST_KNOWN")]
+mid_quality=mid.groupby("algorithm").agg(hv_median=("hypervolume_ratio","median"),
+    cheb_mean=("chebyshev_regret","mean")) if len(mid) else pd.DataFrame()
+runtime=summary[summary.scenario.isin(["mid","city"])].groupby("algorithm").p95_runtime_s.mean()
+winner=min(eligible,key=lambda a:runtime.get(a,float("inf"))) if eligible else None
+figure_dir=ROOT/"reports"/"figures"; figure_dir.mkdir(parents=True,exist_ok=True)
+
+def plot_metric(metric,title,ylabel,filename):
+    if metric not in summary: return
+    fig,ax=plt.subplots(figsize=(7,4))
+    for algo,group in summary.groupby("algorithm"):
+        group=group.sort_values("objective_set",key=lambda x:x.str.len())
+        ax.plot(group.objective_set.str.len(),group[metric],marker="o",label=algo)
+    ax.set(title=title,xlabel="Number of objectives",ylabel=ylabel); ax.grid(alpha=.25); ax.legend()
+    fig.tight_layout(); fig.savefig(figure_dir/filename,dpi=160); plt.close(fig)
+
+plot_metric("median_runtime_s","Query runtime by objective count","Median runtime (s)","runtime_vs_objectives.png")
+plot_metric("recall","Reference Pareto recall","Recall","recall_vs_objectives.png")
+plot_metric("hypervolume_ratio","Hypervolume ratio","HV ratio","hypervolume_ratio.png")
+plot_metric("mean_labels_generated","Generated labels","Labels","label_counts.png")
+plot_metric("median_journeys","Returned Pareto set size","Journeys","pareto_set_size.png")
+if "distance_band" in raw:
+    fig,ax=plt.subplots(figsize=(7,4)); raw.boxplot(column="runtime_s",by="distance_band",ax=ax)
+    ax.set_title("Query runtime by distance band"); ax.set_xlabel("Distance band"); ax.set_ylabel("Runtime (s)")
+    fig.suptitle(""); fig.tight_layout(); fig.savefig(figure_dir/"runtime_by_distance_band.png",dpi=160); plt.close(fig)
+disruption_path=ROOT/"results"/"disruptions_core.csv"
+if disruption_path.exists():
+    dr=pd.read_csv(disruption_path); fig,ax=plt.subplots(figsize=(7,4))
+    dr.boxplot(column="reroute_latency_s",by="algorithm",ax=ax); ax.set_title("Disruption rerouting latency")
+    ax.set_xlabel("Algorithm"); ax.set_ylabel("Latency (s)"); fig.suptitle(""); fig.tight_layout()
+    fig.savefig(figure_dir/"disruption_latency.png",dpi=160); plt.close(fig)
+
+def table(frame): return frame.to_markdown(index=True,floatfmt=".3f") if len(frame) else "No qualifying rows were produced."
+if winner:
+    decision=f"**{winner}** wins among Core-eligible Pareto methods by mean Mid/City p95 runtime ({runtime[winner]:.3f} s)."
+else:
+    decision="No Pareto-set method met the Core quality gate; report the highest-quality observed method without declaring a winner."
+core_txt=table(core_quality); mid_txt=table(mid_quality)
+report=f'''# Multi-objective routing algorithm comparison
+
+## Dataset and implementation
+
+Prepared service date: 2026-09-07. The graph contains 801,929 walking nodes and 1,779,614 directed walking edges. The prepared timetable contains 8,892 stops, 4,437 routes, 52,430 active trips, and 1,273,590 connections. See [`../derived_data/DATA_REPORT.md`](../derived_data/DATA_REPORT.md) for source coverage and caveats.
+
+All four algorithms use the same prepared network and objective definitions: A1 exact label-setting (Core only), A2 connection-adjacency round search, B0 weighted A*, and W repeated B0 weight-sweep. A2 uses round-indexed Pareto bags over the shared connection adjacency; it currently traverses the shared walk graph rather than limiting walking to only stop footpaths, a deviation from canonical McRAPTOR.
+
+## Results
+
+{decision}
+
+### Core quality gate (exact A1 references only)
+
+{core_txt}
+
+### Mid quality gate (optimistic best-known references)
+
+{mid_txt}
+
+![Runtime by objective count](figures/runtime_vs_objectives.png)
+
+![Pareto recall by objective count](figures/recall_vs_objectives.png)
+
+![Hypervolume ratio](figures/hypervolume_ratio.png)
+
+![Generated labels](figures/label_counts.png)
+
+![Runtime by distance band](figures/runtime_by_distance_band.png)
+
+![Returned set size](figures/pareto_set_size.png)
+
+## Literature-only methods
+
+| Method | Idea | Why not implemented |
+|---|---|---|
+| ML-TZSA | Transfer-zone sequences, static contributions, Pareto profiles and a learned downstream time predictor | Requires zone preprocessing and a trained predictor beyond this shared prototype. |
+| NSGA-II (MODyPer) | Evolutionary candidate generation followed by Pareto filtering and preference ranking | Requires a feasibility-preserving route encoding and calibrated evolutionary operators. |
+
+## Limitations
+
+- These results describe this Bengaluru snapshot, query sample and implementation, not algorithms in general.
+- Walking time and road-class risk are modeled. The metro feed may have approximate intermediate times.
+- Aggregate accident totals and ward-level streetlight counts were not assigned to edges. Flood points and modeled road class are the available safety inputs; the composite is a proxy, not a safety measurement.
+- Fare and emission values are placeholder/relative units, not observed rupee or CO2 values.
+- W only finds supported Pareto points. Mid/City references are unions of compared outputs and are optimistic.
+- A1 is restricted to Core and any cap/timeout result is not an exact reference.
+- Empty strata and failures are listed in the query-cell manifest and raw results.
+'''
+(ROOT/"reports").mkdir(exist_ok=True)
+(ROOT/"reports"/"ALGO_COMPARISON.md").write_text(report,encoding="utf-8")
+slide=f'''# PUMO routing algorithms — slide summary
+
+- **Question:** which Pareto-set method best fits this Bengaluru multimodal dataset under the registered quality and runtime rule?
+- **Compared:** B0 weighted-sum A*, W weight-sweep, A2 McRAPTOR-style rounds, and Core-only exact A1.
+- **Measured:** runtime and memory, labels, Pareto recall, hypervolume, linear and Chebyshev regret, failures, objective scaling and rerouting.
+- **Decision:** {winner if winner else 'No Pareto-set method met the Core quality gate.'} {f'It had mean Mid/City p95 runtime {runtime[winner]:.3f} s.' if winner else ''}
+- **Interpretation:** W is fast but misses unsupported compromises; A2 retains a broader front at query time; A1 provides a small-region reference but may hit the label cap.
+- **Caveats:** metro times can be approximate; fares/emissions are placeholders; safety is a proxy based on available layers; Mid/City reference sets are optimistic.
+'''
+(ROOT/"reports"/"SLIDE_SUMMARY.md").write_text(slide,encoding="utf-8")
+print("Wrote reports/ALGO_COMPARISON.md and reports/SLIDE_SUMMARY.md")
