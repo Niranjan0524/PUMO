@@ -1,0 +1,9 @@
+algorithm,served_requests,total_requests,service_rate_pct,total_journey_time_s,total_distance_km,combined_cost,optimality_gap_pct
+A7_ExactSolver (Global Optimum),6,6,100.0,5923.3,30.0,5938.3,0.0
+A2_NearestAvailable,3,6,50.0,3450.0,32.0,63466.0,968.76
+A3_NearestFeasible,4,6,66.66666666666666,4604.4,33.0,44620.9,651.41
+A4_GreedyInsertion,6,6,100.0,6328.3,30.0,6343.3,6.82
+A5_RegretInsertion,6,6,100.0,6328.3,30.0,6343.3,6.82
+A6_Pareto_TimeFirst,5,6,83.33333333333334,4861.8,33.0,24878.3,318.95
+A6_Pareto_FareFirst,5,6,83.33333333333334,4861.8,33.0,24878.3,318.95
+A6_Pareto_Balanced,5,6,83.33333333333334,4861.8,33.0,24878.3,318.95

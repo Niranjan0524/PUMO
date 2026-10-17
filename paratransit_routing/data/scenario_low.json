@@ -1,0 +1,259 @@
+{
+  "scenario_name": "Scenario_Low",
+  "seed": 101,
+  "duration_sec": 3600.0,
+  "num_requests": 20,
+  "num_vehicles": 4,
+  "vehicles": [
+    {
+      "vehicle_id": "V01",
+      "capacity": 4,
+      "current_node": "N01",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    },
+    {
+      "vehicle_id": "V02",
+      "capacity": 4,
+      "current_node": "N02",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    },
+    {
+      "vehicle_id": "V03",
+      "capacity": 4,
+      "current_node": "N03",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    },
+    {
+      "vehicle_id": "V04",
+      "capacity": 4,
+      "current_node": "N04",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    }
+  ],
+  "requests": [
+    {
+      "request_id": "R001",
+      "origin_id": "N04",
+      "destination_id": "N10",
+      "request_time": 186.6,
+      "num_passengers": 2,
+      "max_wait_time": 740.1,
+      "max_detour_ratio": 1.7,
+      "direct_travel_time": 1586.57,
+      "direct_distance_km": 11.5
+    },
+    {
+      "request_id": "R002",
+      "origin_id": "N04",
+      "destination_id": "N06",
+      "request_time": 230.1,
+      "num_passengers": 1,
+      "max_wait_time": 834.9,
+      "max_detour_ratio": 1.6,
+      "direct_travel_time": 432.0,
+      "direct_distance_km": 3.0
+    },
+    {
+      "request_id": "R003",
+      "origin_id": "N05",
+      "destination_id": "N04",
+      "request_time": 333.8,
+      "num_passengers": 1,
+      "max_wait_time": 733.6,
+      "max_detour_ratio": 1.66,
+      "direct_travel_time": 411.43,
+      "direct_distance_km": 3.2
+    },
+    {
+      "request_id": "R004",
+      "origin_id": "N13",
+      "destination_id": "N06",
+      "request_time": 372.1,
+      "num_passengers": 1,
+      "max_wait_time": 837.4,
+      "max_detour_ratio": 1.63,
+      "direct_travel_time": 1828.5,
+      "direct_distance_km": 15.5
+    },
+    {
+      "request_id": "R005",
+      "origin_id": "N08",
+      "destination_id": "N05",
+      "request_time": 383.8,
+      "num_passengers": 1,
+      "max_wait_time": 795.7,
+      "max_detour_ratio": 1.69,
+      "direct_travel_time": 883.19,
+      "direct_distance_km": 6.7
+    },
+    {
+      "request_id": "R006",
+      "origin_id": "N14",
+      "destination_id": "N05",
+      "request_time": 455.5,
+      "num_passengers": 1,
+      "max_wait_time": 713.8,
+      "max_detour_ratio": 1.63,
+      "direct_travel_time": 810.0,
+      "direct_distance_km": 7.2
+    },
+    {
+      "request_id": "R007",
+      "origin_id": "N11",
+      "destination_id": "N07",
+      "request_time": 548.8,
+      "num_passengers": 1,
+      "max_wait_time": 739.2,
+      "max_detour_ratio": 1.66,
+      "direct_travel_time": 3060.48,
+      "direct_distance_km": 27.0
+    },
+    {
+      "request_id": "R008",
+      "origin_id": "N01",
+      "destination_id": "N07",
+      "request_time": 625.1,
+      "num_passengers": 1,
+      "max_wait_time": 602.8,
+      "max_detour_ratio": 1.67,
+      "direct_travel_time": 2126.19,
+      "direct_distance_km": 19.5
+    },
+    {
+      "request_id": "R009",
+      "origin_id": "N01",
+      "destination_id": "N08",
+      "request_time": 655.1,
+      "num_passengers": 1,
+      "max_wait_time": 619.7,
+      "max_detour_ratio": 1.55,
+      "direct_travel_time": 733.33,
+      "direct_distance_km": 5.5
+    },
+    {
+      "request_id": "R010",
+      "origin_id": "N12",
+      "destination_id": "N15",
+      "request_time": 862.9,
+      "num_passengers": 1,
+      "max_wait_time": 795.7,
+      "max_detour_ratio": 1.64,
+      "direct_travel_time": 1704.08,
+      "direct_distance_km": 17.2
+    },
+    {
+      "request_id": "R011",
+      "origin_id": "N15",
+      "destination_id": "N09",
+      "request_time": 987.2,
+      "num_passengers": 1,
+      "max_wait_time": 861.0,
+      "max_detour_ratio": 1.71,
+      "direct_travel_time": 1218.86,
+      "direct_distance_km": 9.8
+    },
+    {
+      "request_id": "R012",
+      "origin_id": "N01",
+      "destination_id": "N03",
+      "request_time": 1194.2,
+      "num_passengers": 1,
+      "max_wait_time": 772.7,
+      "max_detour_ratio": 1.66,
+      "direct_travel_time": 900.0,
+      "direct_distance_km": 6.5
+    },
+    {
+      "request_id": "R013",
+      "origin_id": "N08",
+      "destination_id": "N15",
+      "request_time": 1412.2,
+      "num_passengers": 2,
+      "max_wait_time": 802.7,
+      "max_detour_ratio": 1.68,
+      "direct_travel_time": 1154.57,
+      "direct_distance_km": 9.3
+    },
+    {
+      "request_id": "R014",
+      "origin_id": "N08",
+      "destination_id": "N14",
+      "request_time": 1579.6,
+      "num_passengers": 1,
+      "max_wait_time": 805.7,
+      "max_detour_ratio": 1.78,
+      "direct_travel_time": 1627.07,
+      "direct_distance_km": 13.5
+    },
+    {
+      "request_id": "R015",
+      "origin_id": "N15",
+      "destination_id": "N09",
+      "request_time": 1620.0,
+      "num_passengers": 1,
+      "max_wait_time": 866.9,
+      "max_detour_ratio": 1.54,
+      "direct_travel_time": 1218.86,
+      "direct_distance_km": 9.8
+    },
+    {
+      "request_id": "R016",
+      "origin_id": "N15",
+      "destination_id": "N05",
+      "request_time": 2186.9,
+      "num_passengers": 1,
+      "max_wait_time": 620.3,
+      "max_detour_ratio": 1.66,
+      "direct_travel_time": 337.5,
+      "direct_distance_km": 3.0
+    },
+    {
+      "request_id": "R017",
+      "origin_id": "N06",
+      "destination_id": "N09",
+      "request_time": 2397.2,
+      "num_passengers": 1,
+      "max_wait_time": 683.6,
+      "max_detour_ratio": 1.75,
+      "direct_travel_time": 642.86,
+      "direct_distance_km": 5.0
+    },
+    {
+      "request_id": "R018",
+      "origin_id": "N15",
+      "destination_id": "N03",
+      "request_time": 2414.3,
+      "num_passengers": 1,
+      "max_wait_time": 661.3,
+      "max_detour_ratio": 1.53,
+      "direct_travel_time": 1132.5,
+      "direct_distance_km": 9.7
+    },
+    {
+      "request_id": "R019",
+      "origin_id": "N15",
+      "destination_id": "N06",
+      "request_time": 3128.0,
+      "num_passengers": 1,
+      "max_wait_time": 684.2,
+      "max_detour_ratio": 1.79,
+      "direct_travel_time": 576.0,
+      "direct_distance_km": 4.8
+    },
+    {
+      "request_id": "R020",
+      "origin_id": "N01",
+      "destination_id": "N12",
+      "request_time": 3162.9,
+      "num_passengers": 1,
+      "max_wait_time": 783.9,
+      "max_detour_ratio": 1.7,
+      "direct_travel_time": 843.75,
+      "direct_distance_km": 7.5
+    }
+  ]
+}

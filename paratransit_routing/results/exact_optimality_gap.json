@@ -1,0 +1,82 @@
+[
+  {
+    "algorithm": "A7_ExactSolver (Global Optimum)",
+    "served_requests": 6,
+    "total_requests": 6,
+    "service_rate_pct": 100.0,
+    "total_journey_time_s": 5923.3,
+    "total_distance_km": 30.0,
+    "combined_cost": 5938.3,
+    "optimality_gap_pct": 0.0
+  },
+  {
+    "algorithm": "A2_NearestAvailable",
+    "served_requests": 3,
+    "total_requests": 6,
+    "service_rate_pct": 50.0,
+    "total_journey_time_s": 3450.0,
+    "total_distance_km": 32.0,
+    "combined_cost": 63466.0,
+    "optimality_gap_pct": 968.76
+  },
+  {
+    "algorithm": "A3_NearestFeasible",
+    "served_requests": 4,
+    "total_requests": 6,
+    "service_rate_pct": 66.66666666666666,
+    "total_journey_time_s": 4604.4,
+    "total_distance_km": 33.0,
+    "combined_cost": 44620.9,
+    "optimality_gap_pct": 651.41
+  },
+  {
+    "algorithm": "A4_GreedyInsertion",
+    "served_requests": 6,
+    "total_requests": 6,
+    "service_rate_pct": 100.0,
+    "total_journey_time_s": 6328.3,
+    "total_distance_km": 30.0,
+    "combined_cost": 6343.3,
+    "optimality_gap_pct": 6.82
+  },
+  {
+    "algorithm": "A5_RegretInsertion",
+    "served_requests": 6,
+    "total_requests": 6,
+    "service_rate_pct": 100.0,
+    "total_journey_time_s": 6328.3,
+    "total_distance_km": 30.0,
+    "combined_cost": 6343.3,
+    "optimality_gap_pct": 6.82
+  },
+  {
+    "algorithm": "A6_Pareto_TimeFirst",
+    "served_requests": 5,
+    "total_requests": 6,
+    "service_rate_pct": 83.33333333333334,
+    "total_journey_time_s": 4861.8,
+    "total_distance_km": 33.0,
+    "combined_cost": 24878.3,
+    "optimality_gap_pct": 318.95
+  },
+  {
+    "algorithm": "A6_Pareto_FareFirst",
+    "served_requests": 5,
+    "total_requests": 6,
+    "service_rate_pct": 83.33333333333334,
+    "total_journey_time_s": 4861.8,
+    "total_distance_km": 33.0,
+    "combined_cost": 24878.3,
+    "optimality_gap_pct": 318.95
+  },
+  {
+    "algorithm": "A6_Pareto_Balanced",
+    "served_requests": 5,
+    "total_requests": 6,
+    "service_rate_pct": 83.33333333333334,
+    "total_journey_time_s": 4861.8,
+    "total_distance_km": 33.0,
+    "combined_cost": 24878.3,
+    "optimality_gap_pct": 318.95
+  }
+]

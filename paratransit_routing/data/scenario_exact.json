@@ -1,0 +1,91 @@
+{
+  "scenario_name": "Scenario_Exact_Validation",
+  "seed": 404,
+  "duration_sec": 1200.0,
+  "num_requests": 6,
+  "num_vehicles": 2,
+  "vehicles": [
+    {
+      "vehicle_id": "V01",
+      "capacity": 3,
+      "current_node": "A",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    },
+    {
+      "vehicle_id": "V02",
+      "capacity": 3,
+      "current_node": "B",
+      "current_time": 0.0,
+      "occupied_seats": 0
+    }
+  ],
+  "requests": [
+    {
+      "request_id": "R001",
+      "origin_id": "D",
+      "destination_id": "A",
+      "request_time": 48.3,
+      "num_passengers": 1,
+      "max_wait_time": 804.5,
+      "max_detour_ratio": 1.53,
+      "direct_travel_time": 1080.0,
+      "direct_distance_km": 11.0
+    },
+    {
+      "request_id": "R002",
+      "origin_id": "A",
+      "destination_id": "B",
+      "request_time": 77.1,
+      "num_passengers": 2,
+      "max_wait_time": 800.3,
+      "max_detour_ratio": 1.64,
+      "direct_travel_time": 360.0,
+      "direct_distance_km": 3.0
+    },
+    {
+      "request_id": "R003",
+      "origin_id": "B",
+      "destination_id": "C",
+      "request_time": 228.9,
+      "num_passengers": 1,
+      "max_wait_time": 875.1,
+      "max_detour_ratio": 1.72,
+      "direct_travel_time": 480.0,
+      "direct_distance_km": 4.0
+    },
+    {
+      "request_id": "R004",
+      "origin_id": "C",
+      "destination_id": "A",
+      "request_time": 300.9,
+      "num_passengers": 1,
+      "max_wait_time": 880.3,
+      "max_detour_ratio": 1.77,
+      "direct_travel_time": 840.0,
+      "direct_distance_km": 7.0
+    },
+    {
+      "request_id": "R005",
+      "origin_id": "A",
+      "destination_id": "B",
+      "request_time": 479.7,
+      "num_passengers": 1,
+      "max_wait_time": 727.5,
+      "max_detour_ratio": 1.63,
+      "direct_travel_time": 360.0,
+      "direct_distance_km": 3.0
+    },
+    {
+      "request_id": "R006",
+      "origin_id": "B",
+      "destination_id": "E",
+      "request_time": 591.8,
+      "num_passengers": 1,
+      "max_wait_time": 833.8,
+      "max_detour_ratio": 1.75,
+      "direct_travel_time": 1200.0,
+      "direct_distance_km": 10.0
+    }
+  ]
+}
