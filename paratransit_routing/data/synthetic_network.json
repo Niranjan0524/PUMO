@@ -1,0 +1,512 @@
+{
+  "name": "BengaluruParatransitNetwork",
+  "nodes": [
+    {
+      "node_id": "N01",
+      "name": "Majestic",
+      "x": 0.0,
+      "y": 0.0,
+      "zone": "central"
+    },
+    {
+      "node_id": "N02",
+      "name": "Malleshwaram",
+      "x": -1.5,
+      "y": 3.0,
+      "zone": "north_west"
+    },
+    {
+      "node_id": "N03",
+      "name": "Indiranagar",
+      "x": 6.0,
+      "y": 1.0,
+      "zone": "east"
+    },
+    {
+      "node_id": "N04",
+      "name": "Koramangala",
+      "x": 5.0,
+      "y": -4.0,
+      "zone": "south_east"
+    },
+    {
+      "node_id": "N05",
+      "name": "HSR_Layout",
+      "x": 7.0,
+      "y": -6.5,
+      "zone": "south_east"
+    },
+    {
+      "node_id": "N06",
+      "name": "Silk_Board",
+      "x": 5.5,
+      "y": -7.0,
+      "zone": "south_junction"
+    },
+    {
+      "node_id": "N07",
+      "name": "Electronic_City",
+      "x": 7.0,
+      "y": -15.0,
+      "zone": "outer_south"
+    },
+    {
+      "node_id": "N08",
+      "name": "Jayanagar",
+      "x": 1.0,
+      "y": -5.0,
+      "zone": "south"
+    },
+    {
+      "node_id": "N09",
+      "name": "Banashankari",
+      "x": -1.0,
+      "y": -8.0,
+      "zone": "south_west"
+    },
+    {
+      "node_id": "N10",
+      "name": "Rajajinagar",
+      "x": -4.0,
+      "y": 1.5,
+      "zone": "west"
+    },
+    {
+      "node_id": "N11",
+      "name": "Yeshwanthpur",
+      "x": -3.5,
+      "y": 6.0,
+      "zone": "north_west"
+    },
+    {
+      "node_id": "N12",
+      "name": "Hebbal",
+      "x": 1.0,
+      "y": 8.0,
+      "zone": "north"
+    },
+    {
+      "node_id": "N13",
+      "name": "Whitefield",
+      "x": 16.0,
+      "y": 2.0,
+      "zone": "outer_east"
+    },
+    {
+      "node_id": "N14",
+      "name": "Marathahalli",
+      "x": 11.0,
+      "y": 0.0,
+      "zone": "east_orr"
+    },
+    {
+      "node_id": "N15",
+      "name": "Bellandur",
+      "x": 9.5,
+      "y": -3.5,
+      "zone": "east_orr"
+    }
+  ],
+  "edges": [
+    {
+      "from_node": "N01",
+      "to_node": "N02",
+      "distance_km": 4.0,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 514.2857142857142,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N01",
+      "to_node": "N03",
+      "distance_km": 6.5,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 900.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N01",
+      "to_node": "N04",
+      "distance_km": 7.0,
+      "speed_kmh": 25.0,
+      "travel_time_sec": 1008.0000000000001,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N01",
+      "to_node": "N08",
+      "distance_km": 5.5,
+      "speed_kmh": 27.0,
+      "travel_time_sec": 733.3333333333333,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N01",
+      "to_node": "N10",
+      "distance_km": 4.5,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 578.5714285714287,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N01",
+      "to_node": "N12",
+      "distance_km": 7.5,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 843.75,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N02",
+      "to_node": "N01",
+      "distance_km": 4.0,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 514.2857142857142,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N02",
+      "to_node": "N11",
+      "distance_km": 3.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 420.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N03",
+      "to_node": "N01",
+      "distance_km": 6.5,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 900.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N03",
+      "to_node": "N14",
+      "distance_km": 5.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 660.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N03",
+      "to_node": "N04",
+      "distance_km": 4.8,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 664.6153846153845,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N03",
+      "to_node": "N12",
+      "distance_km": 8.5,
+      "speed_kmh": 35.0,
+      "travel_time_sec": 874.2857142857142,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N04",
+      "to_node": "N01",
+      "distance_km": 7.0,
+      "speed_kmh": 25.0,
+      "travel_time_sec": 1008.0000000000001,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N04",
+      "to_node": "N08",
+      "distance_km": 4.0,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 553.8461538461539,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N04",
+      "to_node": "N05",
+      "distance_km": 3.2,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 411.42857142857144,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N04",
+      "to_node": "N06",
+      "distance_km": 3.0,
+      "speed_kmh": 25.0,
+      "travel_time_sec": 432.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N04",
+      "to_node": "N03",
+      "distance_km": 4.8,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 664.6153846153845,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N05",
+      "to_node": "N04",
+      "distance_km": 3.2,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 411.42857142857144,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N05",
+      "to_node": "N06",
+      "distance_km": 2.2,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 304.61538461538464,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N05",
+      "to_node": "N15",
+      "distance_km": 3.0,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 337.5,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N08",
+      "distance_km": 4.5,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 578.5714285714287,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N09",
+      "distance_km": 5.0,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 642.8571428571429,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N04",
+      "distance_km": 3.0,
+      "speed_kmh": 25.0,
+      "travel_time_sec": 432.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N05",
+      "distance_km": 2.2,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 304.61538461538464,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N07",
+      "distance_km": 9.5,
+      "speed_kmh": 42.0,
+      "travel_time_sec": 814.2857142857143,
+      "road_type": "expressway"
+    },
+    {
+      "from_node": "N06",
+      "to_node": "N15",
+      "distance_km": 4.8,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 576.0,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N07",
+      "to_node": "N06",
+      "distance_km": 9.5,
+      "speed_kmh": 42.0,
+      "travel_time_sec": 814.2857142857143,
+      "road_type": "expressway"
+    },
+    {
+      "from_node": "N08",
+      "to_node": "N01",
+      "distance_km": 5.5,
+      "speed_kmh": 27.0,
+      "travel_time_sec": 733.3333333333333,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N08",
+      "to_node": "N04",
+      "distance_km": 4.0,
+      "speed_kmh": 26.0,
+      "travel_time_sec": 553.8461538461539,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N08",
+      "to_node": "N09",
+      "distance_km": 3.8,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 488.57142857142856,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N08",
+      "to_node": "N06",
+      "distance_km": 4.5,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 578.5714285714287,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N09",
+      "to_node": "N08",
+      "distance_km": 3.8,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 488.57142857142856,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N09",
+      "to_node": "N06",
+      "distance_km": 5.0,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 642.8571428571429,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N10",
+      "to_node": "N01",
+      "distance_km": 4.5,
+      "speed_kmh": 28.0,
+      "travel_time_sec": 578.5714285714287,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N10",
+      "to_node": "N11",
+      "distance_km": 4.0,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 450.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N11",
+      "to_node": "N02",
+      "distance_km": 3.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 420.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N11",
+      "to_node": "N10",
+      "distance_km": 4.0,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 450.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N11",
+      "to_node": "N12",
+      "distance_km": 5.5,
+      "speed_kmh": 35.0,
+      "travel_time_sec": 565.7142857142857,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N12",
+      "to_node": "N11",
+      "distance_km": 5.5,
+      "speed_kmh": 35.0,
+      "travel_time_sec": 565.7142857142857,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N12",
+      "to_node": "N01",
+      "distance_km": 7.5,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 843.75,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N12",
+      "to_node": "N03",
+      "distance_km": 8.5,
+      "speed_kmh": 35.0,
+      "travel_time_sec": 874.2857142857142,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N12",
+      "to_node": "N14",
+      "distance_km": 13.0,
+      "speed_kmh": 38.0,
+      "travel_time_sec": 1231.578947368421,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N13",
+      "to_node": "N14",
+      "distance_km": 6.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 780.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N14",
+      "to_node": "N15",
+      "distance_km": 4.2,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 472.5,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N14",
+      "to_node": "N13",
+      "distance_km": 6.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 780.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N14",
+      "to_node": "N03",
+      "distance_km": 5.5,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 660.0,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N14",
+      "to_node": "N12",
+      "distance_km": 13.0,
+      "speed_kmh": 38.0,
+      "travel_time_sec": 1231.578947368421,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N15",
+      "to_node": "N06",
+      "distance_km": 4.8,
+      "speed_kmh": 30.0,
+      "travel_time_sec": 576.0,
+      "road_type": "ring_road"
+    },
+    {
+      "from_node": "N15",
+      "to_node": "N05",
+      "distance_km": 3.0,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 337.5,
+      "road_type": "arterial"
+    },
+    {
+      "from_node": "N15",
+      "to_node": "N14",
+      "distance_km": 4.2,
+      "speed_kmh": 32.0,
+      "travel_time_sec": 472.5,
+      "road_type": "ring_road"
+    }
+  ]
+}
