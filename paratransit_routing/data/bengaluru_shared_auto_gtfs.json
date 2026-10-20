@@ -1,0 +1,320 @@
+{
+  "city": "Bengaluru",
+  "stops": [
+    {
+      "stop_id": "S01",
+      "name": "Majestic Bus Stand",
+      "latitude": 12.978,
+      "longitude": 77.572,
+      "road_node_id": "N01",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S02",
+      "name": "Malleshwaram 18th Cross",
+      "latitude": 13.007,
+      "longitude": 77.57,
+      "road_node_id": "N02",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S03",
+      "name": "Indiranagar 100ft Road",
+      "latitude": 12.9784,
+      "longitude": 77.6408,
+      "road_node_id": "N03",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S04",
+      "name": "Koramangala 5th Block",
+      "latitude": 12.9356,
+      "longitude": 77.6278,
+      "road_node_id": "N04",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S05",
+      "name": "HSR Layout Sector 2",
+      "latitude": 12.9116,
+      "longitude": 77.6412,
+      "road_node_id": "N05",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S06",
+      "name": "Silk Board Junction",
+      "latitude": 12.9175,
+      "longitude": 77.6227,
+      "road_node_id": "N06",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S07",
+      "name": "Electronic City Phase 1",
+      "latitude": 12.8399,
+      "longitude": 77.677,
+      "road_node_id": "N07",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S08",
+      "name": "Jayanagar 4th Block",
+      "latitude": 12.93,
+      "longitude": 77.582,
+      "road_node_id": "N08",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S09",
+      "name": "Banashankari Temple",
+      "latitude": 12.9258,
+      "longitude": 77.549,
+      "road_node_id": "N09",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S10",
+      "name": "Rajajinagar Circle",
+      "latitude": 12.9921,
+      "longitude": 77.5505,
+      "road_node_id": "N10",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S11",
+      "name": "Yeshwanthpur Circle",
+      "latitude": 13.025,
+      "longitude": 77.541,
+      "road_node_id": "N11",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S12",
+      "name": "Hebbal Flyover",
+      "latitude": 13.0452,
+      "longitude": 77.5972,
+      "road_node_id": "N12",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S13",
+      "name": "Whitefield ITPL Gate",
+      "latitude": 12.9718,
+      "longitude": 77.75,
+      "road_node_id": "N13",
+      "zone_type": "terminus",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S14",
+      "name": "Marathahalli Bridge",
+      "latitude": 12.9565,
+      "longitude": 77.7011,
+      "road_node_id": "N14",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    },
+    {
+      "stop_id": "S15",
+      "name": "Bellandur Lake Road",
+      "latitude": 12.9273,
+      "longitude": 77.6726,
+      "road_node_id": "N15",
+      "zone_type": "corridor",
+      "has_shelter": false,
+      "avg_pax_per_hour": 0.0
+    }
+  ],
+  "routes": [
+    {
+      "route_id": "R01",
+      "route_name": "Majestic - Hebbal North Corridor",
+      "direction": "outbound",
+      "vehicle_capacity": 3,
+      "operator": "informal",
+      "active": true,
+      "stop_sequence": [
+        {
+          "stop_id": "S01",
+          "seq": 0,
+          "arr_offset_sec": 0,
+          "dep_offset_sec": 30.0
+        },
+        {
+          "stop_id": "S02",
+          "seq": 1,
+          "arr_offset_sec": 600,
+          "dep_offset_sec": 630.0
+        },
+        {
+          "stop_id": "S10",
+          "seq": 2,
+          "arr_offset_sec": 900,
+          "dep_offset_sec": 930.0
+        },
+        {
+          "stop_id": "S11",
+          "seq": 3,
+          "arr_offset_sec": 1320,
+          "dep_offset_sec": 1350.0
+        },
+        {
+          "stop_id": "S12",
+          "seq": 4,
+          "arr_offset_sec": 2220,
+          "dep_offset_sec": 2250.0
+        }
+      ],
+      "shape": null
+    },
+    {
+      "route_id": "R02",
+      "route_name": "Majestic - Banashankari South Corridor",
+      "direction": "outbound",
+      "vehicle_capacity": 3,
+      "operator": "informal",
+      "active": true,
+      "stop_sequence": [
+        {
+          "stop_id": "S01",
+          "seq": 0,
+          "arr_offset_sec": 0,
+          "dep_offset_sec": 30.0
+        },
+        {
+          "stop_id": "S08",
+          "seq": 1,
+          "arr_offset_sec": 900,
+          "dep_offset_sec": 930.0
+        },
+        {
+          "stop_id": "S09",
+          "seq": 2,
+          "arr_offset_sec": 1380,
+          "dep_offset_sec": 1410.0
+        }
+      ],
+      "shape": null
+    },
+    {
+      "route_id": "R03",
+      "route_name": "Indiranagar - Silk Board Link",
+      "direction": "outbound",
+      "vehicle_capacity": 3,
+      "operator": "informal",
+      "active": true,
+      "stop_sequence": [
+        {
+          "stop_id": "S03",
+          "seq": 0,
+          "arr_offset_sec": 0,
+          "dep_offset_sec": 30.0
+        },
+        {
+          "stop_id": "S04",
+          "seq": 1,
+          "arr_offset_sec": 1080,
+          "dep_offset_sec": 1110.0
+        },
+        {
+          "stop_id": "S05",
+          "seq": 2,
+          "arr_offset_sec": 1680,
+          "dep_offset_sec": 1710.0
+        },
+        {
+          "stop_id": "S06",
+          "seq": 3,
+          "arr_offset_sec": 2400,
+          "dep_offset_sec": 2430.0
+        }
+      ],
+      "shape": null
+    },
+    {
+      "route_id": "R04",
+      "route_name": "Silk Board - Electronic City Expressway",
+      "direction": "outbound",
+      "vehicle_capacity": 4,
+      "operator": "informal",
+      "active": true,
+      "stop_sequence": [
+        {
+          "stop_id": "S06",
+          "seq": 0,
+          "arr_offset_sec": 0,
+          "dep_offset_sec": 30.0
+        },
+        {
+          "stop_id": "S07",
+          "seq": 1,
+          "arr_offset_sec": 1200,
+          "dep_offset_sec": 1230.0
+        }
+      ],
+      "shape": null
+    },
+    {
+      "route_id": "R05",
+      "route_name": "ORR East Corridor",
+      "direction": "outbound",
+      "vehicle_capacity": 3,
+      "operator": "informal",
+      "active": true,
+      "stop_sequence": [
+        {
+          "stop_id": "S03",
+          "seq": 0,
+          "arr_offset_sec": 0,
+          "dep_offset_sec": 30.0
+        },
+        {
+          "stop_id": "S14",
+          "seq": 1,
+          "arr_offset_sec": 1200,
+          "dep_offset_sec": 1230.0
+        },
+        {
+          "stop_id": "S15",
+          "seq": 2,
+          "arr_offset_sec": 1800,
+          "dep_offset_sec": 1830.0
+        },
+        {
+          "stop_id": "S05",
+          "seq": 3,
+          "arr_offset_sec": 2400,
+          "dep_offset_sec": 2430.0
+        }
+      ],
+      "shape": null
+    }
+  ]
+}

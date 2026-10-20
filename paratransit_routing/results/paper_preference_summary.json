@@ -1,0 +1,86 @@
+[
+  {
+    "strategy": "A2: Solo Ride-Hail (NAV)",
+    "segment": "occasional_user",
+    "service_rate_pct": 31.666666666666664,
+    "avg_wait_min": 5.709541481909904,
+    "avg_ride_min": 19.743080457554143,
+    "avg_fare_inr": 139.10526315789474,
+    "avg_detour": 1.0343684210526316,
+    "fleet_km": 228.9,
+    "avg_generalised_cost_inr": 185.23,
+    "avg_systematic_utility": -5.629
+  },
+  {
+    "strategy": "A3: Sequential Append (NFV)",
+    "segment": "occasional_user",
+    "service_rate_pct": 35.0,
+    "avg_wait_min": 7.134752892610036,
+    "avg_ride_min": 21.70035119085871,
+    "avg_fare_inr": 172.4457142857143,
+    "avg_detour": 1.0307619047619048,
+    "fleet_km": 270.8,
+    "avg_generalised_cost_inr": 225.54,
+    "avg_systematic_utility": -6.849
+  },
+  {
+    "strategy": "A4: Standard Greedy (GIH)",
+    "segment": "occasional_user",
+    "service_rate_pct": 61.66666666666667,
+    "avg_wait_min": 4.362041382041381,
+    "avg_ride_min": 30.72488319725162,
+    "avg_fare_inr": 162.03378378378378,
+    "avg_detour": 1.2444054054054055,
+    "fleet_km": 296.2,
+    "avg_generalised_cost_inr": 220.81,
+    "avg_systematic_utility": -6.714
+  },
+  {
+    "strategy": "Pref: Regular Commuter",
+    "segment": "regular_commuter",
+    "service_rate_pct": 63.33333333333333,
+    "avg_wait_min": 3.9361991517254675,
+    "avg_ride_min": 31.345931736392263,
+    "avg_fare_inr": 164.66342105263158,
+    "avg_detour": 1.2796315789473685,
+    "fleet_km": 287.7,
+    "avg_generalised_cost_inr": 202.75,
+    "avg_systematic_utility": -8.605
+  },
+  {
+    "strategy": "Pref: Time-Sensitive",
+    "segment": "time_sensitive",
+    "service_rate_pct": 65.0,
+    "avg_wait_min": 3.7063659559813407,
+    "avg_ride_min": 30.97356532356532,
+    "avg_fare_inr": 160.99461538461537,
+    "avg_detour": 1.2972564102564101,
+    "fleet_km": 288.6,
+    "avg_generalised_cost_inr": 317.89,
+    "avg_systematic_utility": -5.809
+  },
+  {
+    "strategy": "Pref: Safety-Conscious",
+    "segment": "safety_conscious",
+    "service_rate_pct": 65.0,
+    "avg_wait_min": 4.095734479196016,
+    "avg_ride_min": 30.48141808334116,
+    "avg_fare_inr": 159.51538461538462,
+    "avg_detour": 1.2632051282051282,
+    "fleet_km": 292.2,
+    "avg_generalised_cost_inr": 222.2,
+    "avg_systematic_utility": -6.088
+  },
+  {
+    "strategy": "Pref: Occasional User",
+    "segment": "occasional_user",
+    "service_rate_pct": 63.33333333333333,
+    "avg_wait_min": 4.116191922112974,
+    "avg_ride_min": 31.368152753679073,
+    "avg_fare_inr": 166.82736842105263,
+    "avg_detour": 1.2783947368421054,
+    "fleet_km": 285.9,
+    "avg_generalised_cost_inr": 225.88,
+    "avg_systematic_utility": -6.866
+  }
+]
