@@ -1,54 +1,75 @@
 \chapter{Category 4: Flexible Shared-Auto and Paratransit Routing}
 
 \section{Scope}
-This chapter investigates dynamic on-demand routing and passenger assignment algorithms for flexible shared auto-rickshaw (paratransit) services within the Personalized Urban Mobility Optimizer (PUMO). Rather than assuming fixed transit timetables or dedicated solo vehicular travel, the module addresses the \emph{Dynamic Dial-a-Ride Problem} (D-DARP), where passenger requests arrive sequentially over time and vehicles dynamically adapt their stop sequences to share rides.
+This chapter investigates dynamic on-demand routing and passenger assignment algorithms for flexible shared auto-rickshaw (paratransit) services within the Personalized Urban Mobility Optimizer (PUMO). Rather than assuming fixed transit timetables or dedicated solo vehicular travel, this module addresses the dynamic operational problem of matching passenger requests arriving over time to shared autos, interleaving pickup and drop-off stops to optimize passenger travel time, detour, fare, and service reliability.
 
-The routing engine is evaluated on a calibrated 15-hub road network of Bengaluru, integrating formal stop definitions and flexible corridors based on modified General Transit Feed Specification (GTFS) paratransit methodologies. Seven algorithmic configurations (A1 through A7) are compared across low, medium, and high passenger demand levels, alongside empirical passenger preference models capturing commuter willingness-to-pay and crowding discomfort. Routes and assignments are evaluated using service rate, passenger waiting time, in-vehicle travel time, detour ratio, monetary fare, generalized cost, vehicle fleet kilometers, computational runtime, and mathematical optimality gaps.
+The primary research foundation of this work is built upon three foundational empirical studies in paratransit and shared-mobility research:
+\begin{enumerate}
+\item \textbf{The Digital Matatu Project} (Williams et al., 2015), which established the methodology for capturing semi-formal transit routes and stops using modified General Transit Feed Specification (GTFS) data standards.
+\item \textbf{Commuters' Preference Towards Sharing Paratransit Services} (Das, Bhaduri and Velaga, 2023), which developed stated-preference experiments and Mixed Logit models to quantify commuter Willingness-to-Pay (WTP) for travel time, waiting time, access time, and trip information.
+\item \textbf{Commuters' Preferences and Expectations for Sharing Auto-Rickshaw} (Das and Mandal, 2021), which uncovered passenger behavioral intentions, safety concerns, and the critical discomfort penalty associated with cabin overcrowding.
+\end{enumerate}
 
-The study is computational and exploratory, focusing on dynamic stop-interleaving behavior, multi-objective trade-offs, and sensitivity to commuter preference profiles. The underlying demand profiles and network representations are synthetic and benchmark-calibrated; the reported metrics therefore illustrate algorithm behavior under controlled operational scenarios rather than guaranteeing real-world commercial fleet performance.
+To translate the empirical insights of these papers into an operational system, we implement and evaluate multiple route-finding methods—contrasting unshared solo baselines, sequential append heuristics, combinatorial greedy insertion, regret-based prioritization, multi-objective Pareto trade-offs, and an exact combinatorial benchmark solver.
 
-\section{Existing Work}
-Dial-a-Ride problems (DARP) combine vehicle routing with passenger scheduling, requiring satisfaction of vehicle capacities, pickup-before-dropoff precedence, and time-window deadlines (Cordeau and Laporte, 2007). In dynamic settings (D-DARP), routing decisions must be made in real time as requests appear, without modifying completed historical commitments (Berbeglia et al., 2010).
+\section{Main Research Foundation}
+Our modeling framework directly builds upon three recent peer-reviewed investigations into paratransit operations:
 
-Classical paratransit dispatch literature relies predominantly on heuristic stop-insertion methods (Jaw et al., 1986). Regret-based heuristics introduce multi-vehicle lookahead by prioritizing requests with large cost disparities between their primary and secondary vehicle assignments (Ropke and Pisinger, 2006). More recently, multi-objective Pareto formulations have been proposed to preserve non-dominated trade-offs between operator distance and passenger travel time rather than collapsing them into ad-hoc scalar costs (Deb et al., 2002).
+\paragraph{Paper 1: The Digital Matatu Project (Williams et al., 2015).}
+Published in the \emph{Journal of Transport Geography}, this paper established the first standardized methodology for mapping, standardizing, and representing semi-formal transit systems using mobile-collected transit data and a modified GTFS data schema. 
+\emph{Contribution to PUMO:} Williams et al.\ demonstrated that informal and semi-formal paratransit corridors can be structured into formal route geometries, stop inventories, and stop sequence tables. 
+\emph{Limitation addressed by our work:} The Digital Matatu project was purely a data collection and static inventorying methodology; it did not develop dynamic routing algorithms, pickup/drop-off insertion heuristics, or passenger assignment mechanisms.
 
-In the Global South context, paratransit operations have received renewed attention. Williams et al. (2015) established the Digital Matatu methodology, showing how semi-formal shared transit networks can be standardized into modified GTFS structures. Furthermore, stated-preference choice experiments in Indian metropolitan regions by Das, Bhaduri, and Velaga (2023) and Das and Mandal (2021) reveal that commuters exhibit high sensitivity to waiting time, access time, and cabin overcrowding, emphasizing that passenger assignment cannot be realistically modeled through distance minimization alone.
+\paragraph{Paper 2: Modeling Commuters' Preference Towards Sharing Paratransit Services (Das, Bhaduri and Velaga, 2023).}
+Published in \emph{Transport Policy}, this study conducted stated-preference choice experiments across paratransit commuters in the Mumbai Metropolitan Region (MMR). Using Mixed Logit econometric models, the authors estimated commuter sensitivity and Willingness-to-Pay (WTP) for in-vehicle travel time, waiting time, first-/last-mile access time, travel cost (fare), and real-time trip information. Their central empirical finding is that \textbf{waiting time and access time are prioritized significantly higher than in-vehicle travel time}, and that real-time information substantially reduces perceived commuter disutility.
+\emph{Contribution to PUMO:} Provides the empirical $\beta$-coefficients, WTP values, and commuter segmentation (Regular Commuters, Time-Sensitive, Occasional Users) needed to replace arbitrary heuristic cost weights with behavioral utility equations.
+\emph{Limitation addressed by our work:} This is an econometric choice-modeling paper; it models whether a commuter chooses a shared auto given fixed attributes, but does not design an operational algorithm to route vehicles or schedule stops.
+
+\paragraph{Paper 3: Comparative Evaluation of Commuters' Preferences and Expectations for Sharing Auto-Rickshaw (Das and Mandal, 2021).}
+Published in \emph{Case Studies on Transport Policy}, this empirical investigation of 503 urban commuters analyzed passenger expectations, comfort thresholds, and safety concerns regarding shared auto-rickshaws. A key behavioral finding is that \textbf{cabin overcrowding beyond 75\% capacity creates severe psychological and physical discomfort}, acting as a primary deterrent for both regular and prospective users.
+\emph{Contribution to PUMO:} Defines the operational service constraints and crowding penalty threshold (0.75 occupancy ratio) that must govern vehicle stop insertion.
+\emph{Limitation addressed by our work:} The study provides empirical survey findings and structural equation models, but does not propose a road graph formulation, dynamic vehicle dispatching heuristic, or multi-stop routing logic.
 
 \section{Gaps}
-The paratransit routing module addresses five specific research and implementation gaps:
+By contrasting these three papers, we identify the following critical research and engineering gaps:
 \begin{itemize}
-\item \textbf{Data Representation for Semi-Formal Corridors:} Shared-auto services operate along semi-flexible corridors without fixed bus timetables. A structured data schema is required to define flexible stops, termini, and corridor shapes compatible with graph-based routing algorithms.
-\item \textbf{Arbitrary Scalar Cost Weights:} Traditional DARP implementations combine wait time, ride time, and operator travel into arbitrary penalty weights. Empirical Willingness-to-Pay (WTP) distributions are necessary to ground passenger cost functions in demonstrated commuter behavior.
-\item \textbf{Crowding and Capacity Thresholds:} Existing routing formulations treat vehicle capacity as a binary constraint ($q \le C$). In shared paratransit, commuters experience sharp discomfort once cabin occupancy exceeds 75\%, creating an empirical trade-off between pooling efficiency and passenger comfort.
-\item \textbf{Irrevocable Dynamic Commitments:} In rolling-horizon operations, inserting a new pickup must strictly preserve earlier promised deadlines for passengers already on board or committed to the vehicle.
-\item \textbf{Absence of Exact Benchmark Ground Truth:} Heuristic routing methods are seldom validated against mathematically proven global optima on identical instances, making claims of efficiency unquantifiable.
+\item \textbf{Gap between Data Representation and Operational Routing (Paper 1):} While Williams et al.\ (2015) provide the modified GTFS representation for semi-formal corridors, their work lacks routing algorithms capable of inserting real-time passenger requests into active vehicle paths.
+\item \textbf{Gap between Econometric Preference Models and Vehicle Dispatch (Paper 2):} While Das et al.\ (2023) established that waiting time and access time dominate commuter disutility, existing vehicle routing engines routinely assign vehicles using pure distance or vehicle-travel-time minimization, ignoring passenger WTP.
+\item \textbf{Omission of Overcrowding Discomfort in Route Optimization (Paper 3):} Traditional vehicle routing formulations treat capacity as a binary feasibility flag ($q \le C$). In shared auto-rickshaws, empirical evidence from Das and Mandal (2021) proves that comfort degrades non-linearly above 75\% occupancy, requiring an explicit penalty inside the routing objective.
+\item \textbf{Preservation of Historical Commitments:} In dynamic online routing, assigning a new request must strictly guarantee that already-boarded and already-committed passengers do not have their agreed pickup or detour deadlines broken.
+\item \textbf{Empirical Optimality Validation:} Paratransit heuristics are rarely evaluated against proven mathematical global optima on identical instances to determine their true algorithmic gap.
 \end{itemize}
 
 \section{What We Address}
-This work implements a complete paratransit routing pipeline covering network representation, multi-algorithm dispatch, and empirical preference evaluation:
+To bridge the contributions of Papers 1, 2, and 3 into a functional urban mobility module, we construct an integrated pipeline:
 \begin{enumerate}
-\item Construct a 15-hub, 50-directed-edge urban road network of Bengaluru paired with a Digital Matatu-style modified GTFS network of 15 designated stops and 5 primary corridors.
-\item Implement Dijkstra shortest-path routing (A1) with all-pairs memoization for sub-millisecond travel-time queries.
-\item Establish baseline dispatch heuristics: Nearest Available Vehicle (A2, solo ride-hail) and Nearest Feasible Vehicle (A3, sequential appending).
-\item Formulate and implement the Greedy Insertion Heuristic (A4) and Regret-2 Insertion Heuristic (A5), enforcing dynamic capacity, precedence, time windows, and existing-passenger deadline preservation.
-\item Develop a Pareto-based multi-objective assigner (A6) identifying non-dominated vectors in journey-time and fare space, offering Time-First, Fare-First, and Balanced choices.
-\item Build an exact combinatorial branch-and-bound solver (A7) to compute mathematically proven global optima and benchmark heuristic optimality gaps on small instances.
-\item Operationalize empirical Mixed Logit commuter preference models and crowding discomfort penalties (Papers 2 and 3) into a Preference-Weighted Assigner evaluating four distinct commuter segments.
+\item \textbf{GTFS-Based Paratransit Network (from Paper 1):} Standardize Bengaluru's primary shared-auto corridors into a modified GTFS dataset of 15 designated stops and 5 high-density corridors, mapped to a 50-directed-edge road graph.
+\item \textbf{Behavioral Utility and Generalized Cost Model (from Paper 2):} Implement the Mixed Logit utility formulation of Das et al.\ (2023), translating empirical WTP estimates into generalized cost functions (in \rupee) across four commuter segments.
+\item \textbf{Service Constraints and Crowding Penalty (from Paper 3):} Enforce strict pickup deadlines, maximum detour limits, and a quadratic crowding discomfort penalty active above 75\% cabin capacity.
+\item \textbf{Operational Route-Finding Methods:} Implement and compare distinct algorithmic approaches to find feasible, high-efficiency routes:
+  \begin{itemize}
+  \item Baseline A: Nearest Available Vehicle (unshared solo ride-hail)
+  \item Baseline B: Nearest Feasible Vehicle (sequential append sharing)
+  \item Main Routing Method: Greedy Insertion Heuristic (all-position interleaving)
+  \item Advanced Method: Regret-2 Insertion Heuristic (lookahead prioritization)
+  \item Multi-Objective Method: Pareto-Optimal Insertion (Time vs.\ Fare trade-offs)
+  \item Validation Ground Truth: Exact Combinatorial Solver (global optimum)
+  \end{itemize}
+\item \textbf{Multi-Tier Demand and Segment Evaluation:} Benchmark all algorithms on identical scenarios across low, medium, and high demand, measuring service rates, waiting times, detours, fares, and optimality gaps.
 \end{enumerate}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.98\linewidth]{figures/paratransit_architecture.png}
-\caption{PUMO dynamic shared-auto routing architecture, integrating GTFS corridor networks, constraint verification, multi-algorithm dispatch, and empirical passenger utility evaluation.}
+\caption{PUMO paratransit architecture synthesizing the modified GTFS corridor model (Paper 1), Mixed Logit WTP utility (Paper 2), crowding discomfort constraints (Paper 3), and multi-method routing dispatch.}
 \label{fig:paratransit-routing-pipeline}
 \end{figure}
 
 \section{Method and Experimental Setup}
 
-\subsection{Road Network and GTFS Corridor Model}
-The road graph $G=(V_N, E)$ represents 15 core hubs in Bengaluru connected by 50 directed arterial edges with metric distances (2.2\,km to 13.0\,km) and free-flow auto speeds (25--35\,km/h on arterials, 42\,km/h on expressways).
+\subsection{Paratransit Network Representation (Paper 1: Williams et al., 2015)}
+Following the Digital Matatu methodology, shared-auto operations are structured using modified GTFS tables containing stops, corridors, route shapes, and stop times. Table~\ref{tab:paratransit-data-summary} summarizes the dataset.
 
-Following the Digital Matatu methodology (Williams et al., 2015), the paratransit infrastructure is codified as an integrated GTFS-style dataset:
 \begin{table}[htbp]
 \centering
 \caption{Summary of Bengaluru paratransit network data preparation}
@@ -68,41 +89,54 @@ Missing road-graph node linkages & 0\\
 \end{tabular}
 \end{table}
 
-The five primary corridors are: R01 (Majestic--Hebbal North Corridor), R02 (Majestic--Banashankari South Corridor), R03 (Indiranagar--Silk Board Link), R04 (Silk Board--Electronic City Expressway Feeder), and R05 (Outer Ring Road East Corridor).
+The five primary corridors represent major arterial paratransit flows in Bengaluru:
+\begin{itemize}
+\item \textbf{R01 (North Corridor):} Majestic $\rightarrow$ Malleshwaram $\rightarrow$ Yeshwanthpur $\rightarrow$ Hebbal
+\item \textbf{R02 (South Corridor):} Majestic $\rightarrow$ Jayanagar $\rightarrow$ Banashankari
+\item \textbf{R03 (East-South Link):} Indiranagar $\rightarrow$ Koramangala $\rightarrow$ HSR Layout $\rightarrow$ Silk Board
+\item \textbf{R04 (Expressway Feeder):} Silk Board $\rightarrow$ Electronic City
+\item \textbf{R05 (Outer Ring Road Corridor):} Indiranagar $\rightarrow$ Marathahalli $\rightarrow$ Bellandur $\rightarrow$ HSR Layout
+\end{itemize}
 
-\subsection{Mathematical Problem Formulation and Constraints}
-A dynamic trip request $r \in \mathcal{R}$ is defined by:
-$$r = (id_r, o_r, d_r, t_r^{\mathrm{req}}, q_r, W_r^{\max}, \alpha_r^{\max})$$
-where $o_r, d_r \in V_N$ are origin and destination hubs, $t_r^{\mathrm{req}}$ is request submission time, $q_r \in \{1, 2, 3\}$ is party size, $W_r^{\max}$ is maximum acceptable wait time (10--15 minutes), and $\alpha_r^{\max}$ is maximum allowable detour ratio (1.5--1.8$\times$).
+\subsection{Commuter Utility and Fare Model (Papers 2 \& 3)}
+In Bengaluru paratransit, the regulatory auto meter fare is $F_0 = \text{\rupee}30$ for the first 2.0\,km, and $R_{\mathrm{km}} = \text{\rupee}15$/km thereafter. Under shared operation, passengers receive detour compensation ($\beta_{\mathrm{detour}} = 0.25$) and sharing discounts ($\beta_{\mathrm{sharing}} = 0.15$ per concurrent passenger), bounded by a 45\% discount cap and a \rupee20 minimum floor:
+\begin{equation}
+F_r = \max\left(20.0, F_{\mathrm{solo}}(d_r) \cdot \left[1.0 - \min\left(0.45, 0.25(\tau_r - 1.0) + 0.15(N_{\mathrm{shared}} - 1)\right)\right]\right)
+\label{eq:fare-formula}
+\end{equation}
+where $\tau_r = T_{\mathrm{ride}} / T_{\mathrm{direct}} \ge 1.0$ is the realized trip detour ratio.
 
-When candidate insertion positions $(i, j)$ are evaluated in vehicle $k$'s existing route $\Pi_k = (s_1, \dots, s_m)$, four hard constraints are verified:
-\begin{enumerate}
-\item \textbf{Precedence:} $i \le j$ (pickup stop strictly precedes dropoff stop).
-\item \textbf{Capacity Trajectory:} For every route step $p$, cumulative load $L_k(p) = L_k(t) + \sum_{\ell=1}^p \Delta q(s'_\ell) \le C_k$.
-\item \textbf{New Passenger Time Windows:}
-$$T_r^{\mathrm{pickup}} \le t_r^{\mathrm{req}} + W_r^{\max}, \qquad T_r^{\mathrm{dropoff}} - T_r^{\mathrm{pickup}} \le \alpha_r^{\max} \cdot T^*(o_r, d_r).$$
-\item \textbf{Existing Passenger Preservation:} For every previously committed passenger $r' \in \Pi_k$, the updated arrival times must satisfy:
-$$T_{r'}^{\mathrm{pickup, new}} \le t_{r'}^{\mathrm{req}} + W_{r'}^{\max}, \qquad T_{r'}^{\mathrm{dropoff, new}} - T_{r'}^{\mathrm{pickup}} \le \alpha_{r'}^{\max} \cdot T^*(o_{r'}, d_{r'}).$$
-\end{enumerate}
+Grounded in the Mixed Logit models of Das et al.\ (2023), commuter utility is:
+\begin{equation}
+V_r = \beta_{\mathrm{tt}} T_{\mathrm{tt}} + \beta_{\mathrm{wt}} T_{\mathrm{wt}} + \beta_{\mathrm{at}} T_{\mathrm{at}} + \beta_{\mathrm{fare}} F_r + \beta_{\mathrm{cr}} D(\mathrm{occ}) + \beta_{\mathrm{info}} I_{\mathrm{rt}}.
+\label{eq:utility-formula}
+\end{equation}
 
-\subsection{Empirical Commuter Preference and Fare Model}
-The fare engine models Bengaluru's regulatory tariff: base fare $F_0 = \text{\rupee}30$ for 2.0\,km, and $R_{\mathrm{km}} = \text{\rupee}15$/km thereafter. In shared operations, passengers receive detour compensation ($\beta_{\mathrm{detour}} = 0.25$) and concurrency discounts ($\beta_{\mathrm{sharing}} = 0.15$ per concurrent passenger), bounded by a 45\% maximum discount and a \rupee20 floor:
-$$F_r = \max\left(20.0, F_{\mathrm{solo}}(d_r) \cdot \left[1.0 - \min\left(0.45, 0.25(\tau_r - 1.0) + 0.15(N_{\mathrm{shared}} - 1)\right)\right]\right).$$
+The empirical coefficients and Willingness-to-Pay (WTP) estimates derived from Das et al.\ (2023) are:
+\begin{itemize}
+\item $\text{VoTT} = |\beta_{\mathrm{tt}}/\beta_{\mathrm{fare}}| \in [0.91, 4.00]$ \rupee/min (Value of Travel Time)
+\item $\text{VoWT} = |\beta_{\mathrm{wt}}/\beta_{\mathrm{fare}}| \in [2.43, 8.50]$ \rupee/min (Value of Waiting Time; $\approx 1.89\times \text{VoTT}$)
+\item $\text{VoAT} = |\beta_{\mathrm{at}}/\beta_{\mathrm{fare}}| \in [1.71, 5.42]$ \rupee/min (Value of Access Walking Time; $\approx 1.44\times \text{VoTT}$)
+\item $\Delta_{\mathrm{info}} = |\beta_{\mathrm{info}}/\beta_{\mathrm{fare}}| \in [3.43, 9.33]$ \rupee/trip (Premium for Real-Time Trip Information)
+\end{itemize}
 
-Grounded in the Mixed Logit models of Das et al. (2023), commuter utility is formulated as:
-$$V_r = \beta_{\mathrm{tt}} T_{\mathrm{tt}} + \beta_{\mathrm{wt}} T_{\mathrm{wt}} + \beta_{\mathrm{at}} T_{\mathrm{at}} + \beta_{\mathrm{fare}} F_r + \beta_{\mathrm{cr}} D(\mathrm{occ}) + \beta_{\mathrm{info}} I_{\mathrm{rt}}.$$
-The Willingness-to-Pay (WTP) per minute for waiting time ($\text{VoWT} = |\beta_{\mathrm{wt}}/\beta_{\mathrm{fare}}|$) ranges from \rupee2.43/min for regular commuters to \rupee8.50/min for time-sensitive commuters.
+From Das and Mandal (2021), cabin crowding discomfort activates non-linearly once vehicle occupancy exceeds 75\%:
+\begin{equation}
+D(\mathrm{occ}) = \begin{cases} 0 & \text{if } \mathrm{occ} \le 0.75 \\ \left(\frac{\mathrm{occ} - 0.75}{1.0 - 0.75}\right)^2 & \text{if } \mathrm{occ} > 0.75. \end{cases}
+\label{eq:crowding-discomfort}
+\end{equation}
 
-In accordance with Das and Mandal (2021), cabin crowding incurs quadratic disutility once occupancy exceeds 75\%:
-$$D(\mathrm{occ}) = \begin{cases} 0 & \text{if } \mathrm{occ} \le 0.75 \\ \left(\frac{\mathrm{occ} - 0.75}{1.0 - 0.75}\right)^2 & \text{if } \mathrm{occ} > 0.75. \end{cases}$$
+Combining Equations~\ref{eq:fare-formula}, \ref{eq:utility-formula}, and \ref{eq:crowding-discomfort}, the generalized cost (in \rupee) governing preference-weighted route selection is:
+\begin{equation}
+\boxed{\mathrm{GC}_r = F_r + \mathrm{VoTT} \cdot T_{\mathrm{tt}} + \mathrm{VoWT} \cdot T_{\mathrm{wt}} + \mathrm{VoAT} \cdot T_{\mathrm{at}} + \mathrm{Cost}_{\mathrm{cr}} \cdot D(\mathrm{occ}) - \Delta_{\mathrm{info}}.}
+\label{eq:generalized-cost}
+\end{equation}
 
-The generalized cost (in \rupee) used by the Preference-Weighted Assigner is:
-$$\mathrm{GC}_r = F_r + \mathrm{VoTT} \cdot T_{\mathrm{tt}} + \mathrm{VoWT} \cdot T_{\mathrm{wt}} + \mathrm{VoAT} \cdot T_{\mathrm{at}} + \mathrm{Cost}_{\mathrm{cr}} \cdot D(\mathrm{occ}) - \Delta_{\mathrm{info}}.$$
-
-\subsection{Routing Algorithms}
+\subsection{Route-Finding and Assignment Methods}
+To identify feasible, high-efficiency vehicle stop sequences, we formulate and compare multiple route-finding methods:
 
 \begin{algorithm}[H]
-\caption{Greedy Insertion Heuristic (Algorithm A4)}
+\caption{Greedy Insertion Routing Method}
 \label{alg:greedy-insertion}
 \KwIn{New request $r$, vehicle fleet $\mathcal{K}$, active commitments $\mathcal{R}_{\mathrm{active}}$, current time $t$}
 \KwOut{Best assignment decision $d^*$}
@@ -128,7 +162,24 @@ $\mathrm{best\_score} \leftarrow \infty, \quad d^* \leftarrow \mathrm{Infeasible
 \end{algorithm}
 
 \begin{algorithm}[H]
-\caption{Regret-2 Insertion Heuristic (Algorithm A5)}
+\caption{Preference-Weighted Routing Method (Synthesizing Papers 2 \& 3)}
+\label{alg:preference-weighted-assignment}
+\KwIn{Request $r$, vehicle fleet $\mathcal{K}$, active commitments $\mathcal{R}_{\mathrm{active}}$, commuter segment $S$}
+\KwOut{Utility-maximizing assignment decision $d^*$}
+$\mathcal{C} \leftarrow \mathrm{FindAllFeasibleInsertions}(r, \mathcal{K}, \mathcal{R}_{\mathrm{active}})$\;
+$\mathrm{min\_gc} \leftarrow \infty, \quad d^* \leftarrow \mathrm{Infeasible}$\;
+\ForEach{candidate $d \in \mathcal{C}$}{
+  Compute vehicle occupancy $\mathrm{occ}_k$ at passenger boarding\;
+  Evaluate $\mathrm{GC}_d(S)$ via Equation~\ref{eq:generalized-cost} using segment $S$'s WTP weights and crowding penalty\;
+  \If{$\mathrm{GC}_d(S) < \mathrm{min\_gc}$}{
+    $\mathrm{min\_gc} \leftarrow \mathrm{GC}_d(S), \quad d^* \leftarrow d$\;
+  }
+}
+\Return $d^*$\;
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Regret-2 Routing Method}
 \label{alg:regret-insertion}
 \KwIn{Pending request batch $\mathcal{B}$, vehicle fleet $\mathcal{K}$, active commitments $\mathcal{R}_{\mathrm{active}}$, current time $t$}
 \KwOut{Batch assignment mapping $\mathcal{M}$}
@@ -150,7 +201,7 @@ $\mathcal{M} \leftarrow \emptyset, \quad \mathcal{U} \leftarrow \mathcal{B}$\;
 \end{algorithm}
 
 \begin{algorithm}[H]
-\caption{Pareto Multi-Objective Insertion (Algorithm A6)}
+\caption{Pareto Multi-Objective Routing Method}
 \label{alg:pareto-insertion}
 \KwIn{Request $r$, vehicle fleet $\mathcal{K}$, active commitments $\mathcal{R}_{\mathrm{active}}$, strategy $\sigma \in \{\text{Time}, \text{Fare}, \text{Balanced}\}$}
 \KwOut{Non-dominated assignment decision $d^*$}
@@ -163,39 +214,22 @@ Filter $\mathcal{C}$ into non-dominated Pareto front $\mathcal{P}^* = \{d \in \m
 }
 \end{algorithm}
 
-\begin{algorithm}[H]
-\caption{Preference-Weighted Assignment (Grounded in Papers 2 \& 3)}
-\label{alg:preference-weighted-assignment}
-\KwIn{Request $r$, vehicle fleet $\mathcal{K}$, active commitments $\mathcal{R}_{\mathrm{active}}$, commuter segment $S$}
-\KwOut{Utility-maximizing assignment decision $d^*$}
-$\mathcal{C} \leftarrow \mathrm{FindAllFeasibleInsertions}(r, \mathcal{K}, \mathcal{R}_{\mathrm{active}})$\;
-$\mathrm{min\_gc} \leftarrow \infty, \quad d^* \leftarrow \mathrm{Infeasible}$\;
-\ForEach{candidate $d \in \mathcal{C}$}{
-  Compute vehicle occupancy $\mathrm{occ}_k$ at passenger boarding\;
-  Evaluate $\mathrm{GC}_d(S) = \mathrm{Fare}_d + \mathrm{VoTT}_S T_{\mathrm{tt}} + \mathrm{VoWT}_S T_{\mathrm{wt}} + \mathrm{VoAT}_S T_{\mathrm{at}} + \mathrm{Cost}_{\mathrm{cr}} D(\mathrm{occ}_k) - \Delta_{\mathrm{info}}$\;
-  \If{$\mathrm{GC}_d(S) < \mathrm{min\_gc}$}{
-    $\mathrm{min\_gc} \leftarrow \mathrm{GC}_d(S), \quad d^* \leftarrow d$\;
-  }
-}
-\Return $d^*$\;
-\end{algorithm}
-
 \subsection{Reproducibility Checklist}
 All experimental runs use deterministic seeds (Seed 101 for Low, 202 for Medium, 303 for High, and 404 for Exact Validation). Graph topologies, GTFS corridor tables, and synthetic request streams are archived in \texttt{data/}. The complete test suite contains 44 unit tests with 100\% passing verification.
 
 \section{Results}
 
 \subsection{Multi-Tier Demand Benchmark}
-Table~\ref{tab:routing-profile-results} reports performance across the three demand levels evaluated over 1-hour simulation horizons.
+Table~\ref{tab:routing-profile-results} reports performance across low, medium, and high passenger demand levels over a 1-hour simulation horizon.
 
 \begin{table}[htbp]
 \centering
-\caption{Comparison of paratransit routing algorithms across demand tiers}
+\caption{Performance comparison of paratransit routing methods across demand tiers}
 \label{tab:routing-profile-results}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{llrrrrrrr}
 \toprule
-\textbf{Demand Tier} & \textbf{Algorithm} & \textbf{Service Rate} & \textbf{Wait Time} & \textbf{Ride Time} & \textbf{Avg Fare} & \textbf{Detour} & \textbf{Fleet Dist} & \textbf{Runtime}\\
+\textbf{Demand Tier} & \textbf{Routing Method} & \textbf{Service Rate} & \textbf{Wait Time} & \textbf{Ride Time} & \textbf{Avg Fare} & \textbf{Detour} & \textbf{Fleet Dist} & \textbf{Runtime}\\
  & & \textbf{(\%)} & \textbf{(min)} & \textbf{(min)} & \textbf{(\rupee)} & \textbf{Ratio} & \textbf{(km)} & \textbf{(ms/req)}\\
 \midrule
 \textbf{Low} (20 req, 4 veh) & A2: Nearest Available & 40.0\% & 7.60 & 18.99 & 136.5 & 1.04 & 101.6 & 0.03\\
@@ -229,8 +263,8 @@ Table~\ref{tab:routing-profile-results} reports performance across the three dem
 \label{fig:service-rate-by-demand}
 \end{figure}
 
-\subsection{Relative Change Against Baselines (Medium Demand)}
-Table~\ref{tab:relative-changes} summarizes the percentage changes achieved by Greedy Insertion (A4) relative to the solo ride-hail baseline (A2) and sequential append baseline (A3).
+\subsection{Relative Improvement Over Baselines (Medium Demand)}
+Table~\ref{tab:relative-changes} summarizes the percentage improvements achieved by combinatorial stop insertion (A4) relative to the solo ride-hail baseline (A2) and sequential append baseline (A3).
 
 \begin{table}[htbp]
 \centering
@@ -281,7 +315,7 @@ A2: Nearest Available & 3 / 6 & 50.0\% & 3,450.0 & 32.0 & 63,466.00 & $+968.76\%
 \end{figure}
 
 \subsection{Empirical Preference-Weighted Benchmark (Papers 2 \& 3)}
-Table~\ref{tab:preference-benchmark} evaluates the Preference-Weighted Assigner across commuter segments on medium demand (60 requests, 8 vehicles), incorporating Das et al. (2023) WTP coefficients and Das and Mandal (2021) crowding penalties.
+Table~\ref{tab:preference-benchmark} evaluates the Preference-Weighted Assigner across commuter segments on medium demand (60 requests, 8 vehicles), incorporating Das et al.\ (2023) WTP coefficients and Das and Mandal (2021) crowding penalties.
 
 \begin{table}[htbp]
 \centering
@@ -319,6 +353,20 @@ A4: Standard Greedy (GIH) & 61.7\% & 4.36 & 30.72 & 162.0 & 1.24 & 220.81 & $-6.
 \label{fig:wtp-by-segment}
 \end{figure}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\linewidth]{figures/crowding_discomfort_curve.png}
+\caption{Non-linear crowding discomfort penalty curve active above 75\% capacity derived from Das and Mandal (2021).}
+\label{fig:crowding-discomfort-curve}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\linewidth]{figures/shared_auto_corridor_map.png}
+\caption{Bengaluru shared-auto corridors and designated stops structured under the Digital Matatu modified GTFS schema (Williams et al., 2015).}
+\label{fig:shared-auto-corridors}
+\end{figure}
+
 \section{Discussion}
 The experimental results demonstrate a decisive trade-off between vehicular sharing, passenger service rates, and trip detours:
 \begin{enumerate}
@@ -338,11 +386,11 @@ The experimental results demonstrate a decisive trade-off between vehicular shar
 \item \textbf{Synthetic Demand Generation:} Requests were generated using Poisson processes over regional hubs. Real-world demand exhibits spatial clustering, tidal commute flows, and unmodeled roadside physical hailing.
 \item \textbf{Simplified Road Network:} The experimental graph uses 15 hubs and 50 corridors. While spatially representative of Bengaluru's arterial layout, intra-neighborhood local streets and intersection delay dynamics are omitted.
 \item \textbf{Constant Speed Assumption:} Edge travel times are calculated from free-flow speeds (25--42\,km/h) without dynamic peak-hour congestion feedback or live traffic sensor integration.
-\item \textbf{Static Preference Parameters:} The Mixed Logit coefficients derived from Das et al. (2023) were measured in the Mumbai Metropolitan Region. While structurally applicable to Indian paratransit, localized calibration for Bengaluru commuters remains future work.
+\item \textbf{Static Preference Parameters:} The Mixed Logit coefficients derived from Das et al.\ (2023) were measured in the Mumbai Metropolitan Region. While structurally applicable to Indian paratransit, localized calibration for Bengaluru commuters remains future work.
 \item \textbf{Deterministic Driver Acceptance:} Vehicles are modeled as cooperative agents adhering strictly to assigned schedules. Real-world driver refusal, route deviation, and fare bargaining are not simulated.
 \end{itemize}
 
 \section{Summary}
-This chapter designed, implemented, and empirically evaluated a Dynamic Dial-a-Ride (D-DARP) flexible shared-auto paratransit routing engine for PUMO, incorporating modified GTFS paratransit corridor models (Williams et al., 2015), Mixed Logit commuter preference structures (Das et al., 2023), and nonlinear crowding discomfort penalties (Das and Mandal, 2021).
+This chapter designed, implemented, and empirically evaluated a flexible shared-auto paratransit routing engine for PUMO, directly grounded in three core research studies: modified GTFS paratransit corridor models (Williams et al., 2015), Mixed Logit commuter preference structures (Das et al., 2023), and nonlinear crowding discomfort penalties (Das and Mandal, 2021).
 
 Across identical demand tiers, combinatorial stop insertion (A4, A5) increased passenger service rate by up to 2.35$\times$ over solo ride-hail baselines while constraining average trip detour to 15--24\%. Benchmarked against a branch-and-bound global optimum solver (A7), the insertion heuristics demonstrated an optimality gap of only 6.82\% with an average runtime of under 2 milliseconds per request. Furthermore, preference-weighted assignment successfully aligned routing decisions with commuter priorities, reducing waiting times for time-sensitive riders to 3.71 minutes and optimizing generalized costs for regular commuters.
