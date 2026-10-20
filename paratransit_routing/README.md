@@ -121,9 +121,41 @@ Evaluated on the exact validation instance (6 dynamic requests, 2 shared autos, 
 
 ---
 
+## Grounding in Empirical Paratransit Research
+
+The routing engine directly operationalizes three foundational empirical studies (see [`PAPERS_ALIGNMENT.md`](./PAPERS_ALIGNMENT.md) for complete mathematical formulations and data schemas):
+
+1. **Digital Matatu (Williams et al., 2015)**:
+   - Modified GTFS data structures (`AutoStop`, `SharedAutoRoute`, `RouteShape`) in [`gtfs_model.py`](./src/pumo_paratransit/gtfs_model.py).
+   - Validation pipeline ensuring topological connectivity and linking stops to directed road graph nodes.
+   - Bengaluru shared-auto corridors saved to [`data/bengaluru_shared_auto_gtfs.json`](./data/bengaluru_shared_auto_gtfs.json).
+
+2. **Commuter Preference & Mixed Logit Model (Das, Bhaduri & Velaga, 2023)**:
+   - Mixed Logit systematic utility formulation with empirical $\beta$ coefficients and preference heterogeneity.
+   - Value of Travel Time (VoTT), Value of Waiting Time (VoWT), and Value of Access Time (VoAT) in [`passenger_preference.py`](./src/pumo_paratransit/passenger_preference.py).
+   - Segment-specific assignment in [`preference_assigner.py`](./src/pumo_paratransit/preference_assigner.py) using WTP-calibrated Generalised Cost (in ₹).
+
+3. **Shared-Auto Expectations & Crowding Deterrent (Das & Mandal, 2021)**:
+   - Quadratic crowding penalty function active above the 75% capacity threshold.
+   - Quantified trade-offs between affordability, security, and discomfort in paratransit sharing.
+
+### Preference-Weighted Evaluation Across Commuter Segments
+
+| Strategy / Segment | Service Rate (%) | Avg Wait (min) | Avg Ride (min) | Avg Fare (₹) | Detour Ratio | Avg Generalised Cost (₹) |
+|---|---|---|---|---|---|---|
+| A2: Solo Ride-Hail (NAV) | 31.7% | 5.71 | 19.74 | ₹139.1 | 1.03 | ₹185.23 |
+| A3: Sequential Append (NFV) | 35.0% | 7.13 | 21.70 | ₹172.4 | 1.03 | ₹225.54 |
+| A4: Standard Greedy (GIH) | 61.7% | 4.36 | 30.72 | ₹162.0 | 1.24 | ₹220.81 |
+| **Pref: Regular Commuter** | **63.3%** | **3.94** | 31.35 | ₹164.7 | 1.28 | **₹202.75** |
+| **Pref: Time-Sensitive** | **65.0%** | **3.71** | 30.97 | ₹161.0 | 1.30 | ₹317.89 |
+| **Pref: Safety-Conscious** | **65.0%** | **4.10** | 30.48 | ₹159.5 | 1.26 | ₹222.20 |
+| **Pref: Occasional User** | **63.3%** | **4.12** | 31.37 | ₹166.8 | 1.28 | ₹225.88 |
+
+---
+
 ## Reproducing the Results
 
-Run all unit tests:
+Run all unit tests (44 tests, 100% passing):
 ```powershell
 python paratransit_routing/scripts/01_run_unit_tests.py
 ```
@@ -138,7 +170,14 @@ Run the exact solver optimality gap evaluation:
 python paratransit_routing/scripts/04_exact_gap_evaluation.py
 ```
 
-Generate visual plots:
+Run the empirical preference benchmark (Papers 2 & 3):
+```powershell
+python paratransit_routing/scripts/05_run_paper_preference_benchmark.py
+```
+
+Generate all visual figures and plots:
 ```powershell
 python paratransit_routing/scripts/03_generate_plots.py
+python paratransit_routing/scripts/06_generate_paper_plots.py
 ```
+
